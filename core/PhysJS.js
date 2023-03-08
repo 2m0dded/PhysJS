@@ -870,3 +870,555 @@ function simulateBullets(bullets, gravity, airResistance, dt) {
     }
   }
 }
+
+function createLighting(gl, program, lightPosition, objectPosition, objectRotation, objectScale) {
+  gl.uniform3fv(program.uniforms.lightPosition, lightPosition);
+  
+  var modelMatrix = mat4.create();
+  mat4.translate(modelMatrix, modelMatrix, objectPosition);
+  mat4.rotateX(modelMatrix, modelMatrix, objectRotation[0]);
+  mat4.rotateY(modelMatrix, modelMatrix, objectRotation[1]);
+  mat4.rotateZ(modelMatrix, modelMatrix, objectRotation[2]);
+  mat4.scale(modelMatrix, modelMatrix, objectScale);
+  gl.uniformMatrix4fv(program.uniforms.modelMatrix, false, modelMatrix);
+  
+  var normalMatrix = mat4.create();
+  mat4.invert(normalMatrix, modelMatrix);
+  mat4.transpose(normalMatrix, normalMatrix);
+  gl.uniformMatrix4fv(program.uniforms.normalMatrix, false, normalMatrix);
+  
+  var viewMatrix = mat4.create();
+  mat4.lookAt(viewMatrix, [0, 0, 5], [0, 0, 0], [0, 1, 0]);
+  var projectionMatrix = mat4.create();
+  mat4.perspective(projectionMatrix, 45 * Math.PI / 180, gl.canvas.width / gl.canvas.height, 0.1, 100);
+  gl.uniformMatrix4fv(program.uniforms.viewMatrix, false, viewMatrix);
+  gl.uniformMatrix4fv(program.uniforms.projectionMatrix, false, projectionMatrix);
+  
+  gl.enable(gl.DEPTH_TEST);
+  gl.enable(gl.CULL_FACE);
+  gl.cullFace(gl.BACK);
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+  gl.depthFunc(gl.LEQUAL);
+  gl.drawArrays(gl.TRIANGLES, 0, numVertices);
+}
+
+function simulateBouncingBall(position, velocity, gravity, groundHeight, bounceFactor, deltaTime) {
+  const velocityMagnitude = vec3.length(velocity);
+  const surfaceNormal = vec3.fromValues(0, 1, 0);
+  
+  const contactPoint = vec3.clone(position);
+  contactPoint[1] = groundHeight;
+  
+  const ballHeight = position[1] - groundHeight;
+  const isBallOnGround = ballHeight <= 0.0;
+  
+  if (isBallOnGround) {
+    const contactNormal = vec3.clone(surfaceNormal);
+    
+    const relativeVelocity = vec3.clone(velocity);
+    
+    vec3.projectOnPlane(relativeVelocity, contactNormal, relativeVelocity);
+    
+    const bounceVelocityMagnitude = -relativeVelocity[1] * bounceFactor;
+    
+    const bounceVelocity = vec3.scale(contactNormal, contactNormal, bounceVelocityMagnitude);
+    vec3.add(velocity, velocity, bounceVelocity);
+    
+    position[1] = groundHeight + 0.01;
+  } else {
+    const gravityVelocity = vec3.scale(vec3.create(), gravity, deltaTime);
+    vec3.add(velocity, velocity, gravityVelocity);
+  }
+  
+  const displacement = vec3.scale(vec3.create(), velocity, deltaTime);
+  vec3.add(position, position, displacement);
+  
+  const dampeningFactor = 0.99;
+  const dampeningVelocity = vec3.scale(vec3.create(), velocity, dampeningFactor);
+  vec3.copy(velocity, dampeningVelocity);
+}
+
+function generateMipmap(gl, texture) {
+  gl.bindTexture(gl.TEXTURE_2D, texture);
+  gl.generateMipmap(gl.TEXTURE_2D);
+  gl.bindTexture(gl.TEXTURE_2D, null);
+}
+
+function drawFullscreenQuad(gl, shader, texture) {
+  const vertexBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+    -1, -1, 1, -1, -1, 1, 1, 1,
+  ]), gl.STATIC_DRAW);
+
+  gl.useProgram(shader.program);
+  gl.uniform1i(shader.uniforms.uTexture, 0);
+
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, texture);
+
+  const positionLocation = gl.getAttribLocation(shader.program, 'aPosition');
+  gl.enableVertexAttribArray(positionLocation);
+  gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+  gl.bindTexture(gl.TEXTURE_2D, null);
+  gl.bindBuffer(gl.ARRAY_BUFFER, null);
+  gl.disableVertexAttribArray(positionLocation);
+}
+
+async function loadOBJ(url) {
+  const response = await fetch(url);
+  const text = await response.text();
+
+  const positions = [];
+  const normals = [];
+  const textureCoords = [];
+  const indices = [];
+
+  text.trim().split('\n').forEach(line => {
+    const parts = line.trim().split(/\s+/);
+    switch (parts[0]) {
+      case 'v':
+        positions.push(
+          parseFloat(parts[1]),
+          parseFloat(parts[2]),
+          parseFloat(parts[3])
+        );
+        break;
+      case 'vn':
+        normals.push(
+          parseFloat(parts[1]),
+          parseFloat(parts[2]),
+          parseFloat(parts[3])
+        );
+        break;
+      case 'vt':
+        textureCoords.push(
+          parseFloat(parts[1]),
+          parseFloat(parts[2])
+        );
+        break;
+      case 'f':
+        const i1 = parseInt(parts[1].split('/')[0]) - 1;
+        const i2 = parseInt(parts[2].split('/')[0]) - 1;
+        const i3 = parseInt(parts[3].split('/')[0]) - 1;
+        indices.push(i1, i2, i3);
+        break;
+    }
+  });
+
+  return {
+    positions,
+    normals,
+    textureCoords,
+    indices,
+  };
+}
+
+function createCubeMap(gl, images) {
+  const texture = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
+
+  const targets = [
+    gl.TEXTURE_CUBE_MAP_POSITIVE_X,
+    gl.TEXTURE_CUBE_MAP_NEGATIVE_X,
+    gl.TEXTURE_CUBE_MAP_POSITIVE_Y,
+    gl.TEXTURE_CUBE_MAP_NEGATIVE_Y,
+    gl.TEXTURE_CUBE_MAP_POSITIVE_Z,
+    gl.TEXTURE_CUBE_MAP_NEGATIVE_Z,
+  ];
+
+  targets.forEach((target, index) => {
+    gl.texImage2D(target, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, images[index]);
+  });
+
+  gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE);
+
+  gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
+
+  return texture;
+}
+
+function createParticles(gl, maxParticles) {
+  const vertices = new Float32Array(maxParticles * 3);
+  const velocities = new Float32Array(maxParticles * 3);
+  const lifeTimes = new Float32Array(maxParticles);
+  const startTimes = new Float32Array(maxParticles);
+
+  const vao = gl.createVertexArray();
+  gl.bindVertexArray(vao);
+
+  const vertexBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.DYNAMIC_DRAW);
+  gl.enableVertexAttribArray(0);
+  gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
+
+  const velocityBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, velocityBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, velocities, gl.DYNAMIC_DRAW);
+  gl.enableVertexAttribArray(1);
+  gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 0, 0);
+
+  const lifeTimeBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, lifeTimeBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, lifeTimes, gl.DYNAMIC_DRAW);
+  gl.enableVertexAttribArray(2);
+  gl.vertexAttribPointer(2, 1, gl.FLOAT, false, 0, 0);
+
+  const startTimeBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, startTimeBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, startTimes, gl.DYNAMIC_DRAW);
+  gl.enableVertexAttribArray(3);
+  gl.vertexAttribPointer(3, 1, gl.FLOAT, false, 0, 0);
+
+  gl.bindVertexArray(null);
+
+  return {
+    maxParticles,
+    vertices,
+    velocities,
+    lifeTimes,
+    startTimes,
+    vao,
+    update: (dt) => {
+      for (let i = 0; i < maxParticles; i++) {
+        if (lifeTimes[i] > 0) {
+          vertices[i * 3] += velocities[i * 3] * dt;
+          vertices[i * 3 + 1] += velocities[i * 3 + 1] * dt;
+          vertices[i * 3 + 2] += velocities[i * 3 + 2] * dt;
+          
+          velocities[i * 3 + 1] -= 9.8 * dt;
+          
+          lifeTimes[i] -= dt;
+        } else {
+          vertices[i * 3] = 0;
+          vertices[i * 3 + 1] = 0;
+          vertices[i * 3 + 2] = 0;
+
+          velocities[i * 3] = (Math.random() - 0.5) * 10;
+          velocities[i * 3 + 1] = 5 + Math.random() * 10;
+          velocities[i * 3 + 2] = (Math.random() - 0.5) * 10;
+
+          lifeTimes[i] = Math.random() * 3;
+          startTimes[i] = performance.now();
+        }
+      }
+
+      gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.DYNAMIC_DRAW);
+
+      gl.bindBuffer(gl.ARRAY_BUFFER, velocityBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, velocities, gl.DYNAMIC_DRAW);
+        // Update life time buffer data
+      gl.bindBuffer(gl.ARRAY_BUFFER, lifeTimeBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, lifeTimes, gl.DYNAMIC_DRAW);
+
+  // Update start time buffer data
+      gl.bindBuffer(gl.ARRAY_BUFFER, startTimeBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, startTimes, gl.DYNAMIC_DRAW);
+    },
+    draw: (program) => {
+      gl.useProgram(program);
+      gl.bindVertexArray(vao);
+      gl.drawArrays(gl.POINTS, 0, maxParticles);
+      gl.bindVertexArray(null);
+    },
+  };
+}
+
+function createBaseplate(gl, size, color) {
+  const positionBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+
+  const positions = [
+    size, 0, -size,
+    -size, 0, -size,
+    size, 0, size,
+    -size, 0, size,
+  ];
+
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
+
+  const colorBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+
+  const colors = [
+    ...color, ...color, ...color, ...color,
+  ];
+
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
+
+  const vao = gl.createVertexArray();
+  gl.bindVertexArray(vao);
+
+  gl.enableVertexAttribArray(0);
+  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+  gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
+
+  gl.enableVertexAttribArray(1);
+  gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+  gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 0, 0);
+
+  gl.bindVertexArray(null);
+
+  return {
+    draw: (program) => {
+      gl.useProgram(program);
+      gl.bindVertexArray(vao);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      gl.bindVertexArray(null);
+    },
+  };
+}
+
+function createUIElement(gl, position, size, color, texture) {
+  const positionBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+
+  const positions = [
+    position[0] + size[0], position[1] + size[1], 0.0,
+    position[0], position[1] + size[1], 0.0,
+    position[0] + size[0], position[1], 0.0,
+    position[0], position[1], 0.0,
+  ];
+
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
+
+  const texCoordBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
+
+  const texCoords = [
+    1.0, 1.0,
+    0.0, 1.0,
+    1.0, 0.0,
+    0.0, 0.0,
+  ];
+
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(texCoords), gl.STATIC_DRAW);
+
+  const colorBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+
+  const colors = [
+    ...color, ...color, ...color, ...color,
+  ];
+
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
+
+  const vao = gl.createVertexArray();
+  gl.bindVertexArray(vao);
+
+  gl.enableVertexAttribArray(0);
+  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+  gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
+
+  gl.enableVertexAttribArray(1);
+  gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+  gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 0, 0);
+
+  gl.enableVertexAttribArray(2);
+  gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
+  gl.vertexAttribPointer(2, 2, gl.FLOAT, false, 0, 0);
+
+  gl.bindVertexArray(null);
+
+  return {
+    position,
+    size,
+    texture,
+    draw: (program) => {
+      gl.useProgram(program);
+      gl.bindVertexArray(vao);
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      gl.bindTexture(gl.TEXTURE_2D, null);
+      gl.bindVertexArray(null);
+    },
+    contains: (point) => {
+      const minX = position[0];
+      const maxX = position[0] + size[0];
+      const minY = position[1];
+      const maxY = position[1] + size[1];
+      return point[0] >= minX && point[0] <= maxX && point[1] >= minY && point[1] <= maxY;
+    },
+  };
+}
+
+function cleanup(gl, program, buffers, textures, framebuffers) {
+  gl.useProgram(null);
+  gl.bindBuffer(gl.ARRAY_BUFFER, null);
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  gl.bindTexture(gl.TEXTURE_2D, null);
+  gl.bindVertexArray(null);
+
+  if (buffers) {
+    buffers.forEach((buffer) => {
+      gl.deleteBuffer(buffer);
+    });
+  }
+
+  if (textures) {
+    textures.forEach((texture) => {
+      gl.deleteTexture(texture);
+    });
+  }
+
+  if (framebuffers) {
+    framebuffers.forEach((framebuffer) => {
+      gl.deleteFramebuffer(framebuffer);
+    });
+  }
+
+  if (program) {
+    gl.deleteProgram(program);
+  }
+
+  gl.clearColor(0.0, 0.0, 0.0, 0.0);
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+}
+
+function closeGame(gl, program, buffers, textures, framebuffers) {
+  cleanup(gl, program, buffers, textures, framebuffers);
+}
+
+function connectToSQLServer(config) {
+  const socket = new WebSocket(`ws://${config.host}:${config.port}`);
+
+  socket.onopen = () => {
+    console.log('Connected to SQL server!');
+    socket.send(`USE ${config.database};`);
+  };
+
+  socket.onerror = (err) => {
+    console.error('Error connecting to SQL server:', err);
+    socket.close();
+  };
+
+  socket.onclose = () => {
+    console.log('Disconnected from SQL server.');
+    socket.close();
+  };
+
+  return socket;
+}
+
+function cacheGameContent(key, content) {
+  try {
+    const serializedContent = JSON.stringify(content);
+    localStorage.setItem(key, serializedContent);
+    console.log(`Cached content for key "${key}".`);
+  } catch (err) {
+    console.error(`Error caching content for key "${key}":`, err);
+  }
+}
+
+function getCachedGameContent(key) {
+  try {
+    const serializedContent = localStorage.getItem(key);
+    const content = JSON.parse(serializedContent);
+    console.log(`Retrieved cached content for key "${key}".`);
+    return content;
+  } catch (err) {
+    console.error(`Error retrieving cached content for key "${key}":`, err);
+    return null;
+  }
+}
+
+function simulateGlassBreak(numParticles, center, radius, velocity) {
+  const particles = [];
+
+  for (let i = 0; i < numParticles; i++) {
+    const position = [
+      center[0] + (Math.random() - 0.5) * radius,
+      center[1] + (Math.random() - 0.5) * radius,
+      center[2] + (Math.random() - 0.5) * radius,
+    ];
+    const mass = 0.1;
+    const acceleration = [0, -9.81, 0];
+    const particle = { position, velocity, acceleration, mass };
+    particles.push(particle);
+  }
+
+  const timeStep = 0.01;
+  const numSteps = 1000;
+  for (let i = 0; i < numSteps; i++) {
+    for (let j = 0; j < numParticles; j++) {
+      const particle = particles[j];
+      particle.position[0] += particle.velocity[0] * timeStep;
+      particle.position[1] += particle.velocity[1] * timeStep;
+      particle.position[2] += particle.velocity[2] * timeStep;
+    }
+
+    for (let j = 0; j < numParticles; j++) {
+      const particle = particles[j];
+      particle.velocity[0] += particle.acceleration[0] * timeStep;
+      particle.velocity[1] += particle.acceleration[1] * timeStep;
+      particle.velocity[2] += particle.acceleration[2] * timeStep;
+    }
+  }
+
+  return particles.map(particle => particle.position);
+}
+
+function loadAudio(src) {
+  const audio = new Audio();
+  audio.src = src;
+  return audio;
+}
+
+function playAudio(audio) {
+  audio.play();
+}
+
+
+function pauseAudio(audio) {
+  audio.pause();
+}
+
+function stopAudio(audio) {
+  audio.pause();
+  audio.currentTime = 0;
+}
+
+function setAudioVolume(audio, volume) {
+  audio.volume = volume;
+}
+
+function createProximityAudio(src, maxDistance, fadeInTime, fadeOutTime) {
+  const audio = new Audio(src);
+  audio.loop = true;
+  audio.volume = 0;
+
+  const audioContext = new AudioContext();
+  const source = audioContext.createMediaElementSource(audio);
+  const gainNode = audioContext.createGain();
+  source.connect(gainNode);
+  gainNode.connect(audioContext.destination);
+
+  function updateVolume(position) {
+    const distance = Math.sqrt(
+      Math.pow(position.x - audio.position.x, 2) +
+      Math.pow(position.y - audio.position.y, 2) +
+      Math.pow(position.z - audio.position.z, 2)
+    );
+    let volume = 1 - (distance / maxDistance);
+    volume = Math.max(0, Math.min(1, volume));
+    gainNode.gain.setValueAtTime(volume, audioContext.currentTime);
+
+    if (volume > audio.volume) {
+      audio.volume += (volume - audio.volume) / fadeInTime;
+    } else {
+      audio.volume -= (audio.volume - volume) / fadeOutTime;
+    }
+  }
+
+  return { audio, updateVolume };
+}
