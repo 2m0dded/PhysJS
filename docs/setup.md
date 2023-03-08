@@ -12,12 +12,13 @@
 <html>
 
 <head>
-  <title>Getaway Shootout Clone</title>
+  <title>PhysJS<title>
 </head>
 
 <body>
   <canvas id="game-canvas"></canvas>
-  <script src="x2d.js"></script>
+  <script src="PhysJS.js"></script>
+  <script src="webgl.js" type="module" defer></script>
 </body>
 
 </html>
