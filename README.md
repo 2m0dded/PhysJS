@@ -6,7 +6,7 @@
   [R] Remove, 
   [S] Suggestion, 
 
-Introducing PhysJS, a powerful JavaScript physics engine designed for 3D games. With PhysJS, game developers can bring realistic physics simulations to their games, adding a new level of immersion and gameplay depth. Whether you're building an action-packed shooter or a puzzle-solving adventure, PhysJS provides the tools you need to create engaging and lifelike environments.
+Introducing PhysJS, a powerful JavaScript physics engine designed for 2D and 3D games. With PhysJS, game developers can bring realistic physics simulations to their games, adding a new level of immersion and gameplay depth. Whether you're building an action-packed shooter or a puzzle-solving adventure, PhysJS provides the tools you need to create engaging and lifelike environments.
 
 PhysJS is built on top of the latest web technologies, making it highly performant and compatible with modern browsers. It uses a combination of mathematical models, algorithms, and heuristics to accurately simulate the behavior of objects in a 3D space. This includes realistic interactions such as collisions, gravity, and forces, as well as more complex phenomena like fluid dynamics, soft bodies, and particle systems.
 
