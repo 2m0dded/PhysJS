@@ -2036,3 +2036,7 @@ function attachAttachment2D(attachment, weapon) {
   }
   weapon.sprite.src = "weapon_with_" + attachment.type + ".png";
 }
+
+function mapRange(value, inMin, inMax, outMin, outMax) {
+  return (value - inMin) * (outMax - outMin) / (inMax - inMin) + outMin;
+}
