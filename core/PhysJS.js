@@ -1500,3 +1500,107 @@ function calculateSpinWaveDispersion(kx, ky, J, S, M) {
   
   return omega;
 }
+
+function calculateLambShift(Z, n, l, j, S) {
+  const alpha = 1/137;
+  const Ry = 13.605693122994;
+  const a0 = 0.52917721067e-10;
+  const En = - Ry / (n**2);
+  const E1 = - Ry / 4;
+  const DeltaE = alpha**2 * Ry / (2*n**3) * (
+    1/(j+0.5) - 3/4*n/(j+0.5)**2
+    + l*(l+1)-j*(j+1)-S*(S+1)/(j+0.5)/(j+1.5)
+  );
+  
+  return DeltaE;
+}
+
+function setBit(n, i) {
+  return n | (1 << i);
+}
+
+function clearBit(n, i) {
+  return n & ~(1 << i);
+}
+
+function toggleBit(n, i) {
+  return n ^ (1 << i);
+}
+
+function getBit(n, i) {
+  return (n >> i) & 1;
+}
+
+function countBits(n) {
+  let count = 0;
+  while (n) {
+    count += n & 1;
+    n >>= 1;
+  }
+  return count;
+}
+
+function rotateLeft(n, k) {
+  return ((n << k) | (n >>> (32 - k))) >>> 0;
+}
+
+function rotateRight(n, k) {
+  return ((n >>> k) | (n << (32 - k))) >>> 0;
+}
+
+function calculateDiffuseLight(color, normal, lightDirection) {
+  const dotProduct = Math.max(0, normal.dot(lightDirection));
+  return color.multiplyScalar(dotProduct);
+}
+
+function calculateSpecularLight(color, normal, lightDirection, viewDirection, shininess) {
+  const reflectionDirection = lightDirection.clone().reflect(normal);
+  const dotProduct = Math.max(0, reflectionDirection.dot(viewDirection));
+  return color.multiplyScalar(Math.pow(dotProduct, shininess));
+}
+
+function calculateAmbientLight(color, ambientColor) {
+  return color.multiply(ambientColor);
+}
+
+function calculateFresnelReflection(cosTheta, eta1, eta2) {
+  const sinThetaT = (eta1 / eta2) * Math.sqrt(Math.max(0, 1 - cosTheta * cosTheta));
+  if (sinThetaT >= 1) {
+    return 1;
+  } else {
+    const cosThetaT = Math.sqrt(Math.max(0, 1 - sinThetaT * sinThetaT));
+    const rPerp = ((eta2 * cosTheta - eta1 * cosThetaT) / (eta2 * cosTheta + eta1 * cosThetaT)) ** 2;
+    const rParallel = ((eta1 * cosTheta - eta2 * cosThetaT) / (eta1 * cosTheta + eta2 * cosThetaT)) ** 2;
+    return 0.5 * (rPerp + rParallel);
+  }
+}
+
+function calculateBlinnPhongBRDF(lightDirection, viewDirection, normal, specularColor, shininess) {
+  const halfwayDirection = lightDirection.clone().add(viewDirection).normalize();
+  const cosTheta = normal.dot(halfwayDirection);
+  const specular = specularColor.multiplyScalar(Math.pow(Math.max(0, cosTheta), shininess));
+  const diffuse = new THREE.Color(0, 0, 0);
+  return { diffuse, specular };
+}
+
+function calculateSchlickApproximation(cosTheta, refractionIndex) {
+  const r0 = ((1 - refractionIndex) / (1 + refractionIndex)) ** 2;
+  return r0 + (1 - r0) * Math.pow(1 - cosTheta, 5);
+}
+
+function calculateBeerLambertLaw(color, distance, absorptionCoefficient) {
+  return color.clone().multiplyScalar(Math.exp(-absorptionCoefficient * distance));
+}
+
+function calculateSnellReflection(direction, normal, refractionIndex1, refractionIndex2) {
+  const cosTheta1 = -normal.dot(direction);
+  const sinTheta1 = Math.sqrt(Math.max(0, 1 - cosTheta1 * cosTheta1));
+  const sinTheta2 = refractionIndex1 / refractionIndex2 * sinTheta1;
+  if (sinTheta2 >= 1) {
+    // Total internal reflection
+    return direction.clone().reflect(normal);
+  } else {
+    const cosTheta2 = Math.sqrt(Math.max(0, 1 - sinTheta2 * sinTheta2));
+    return direction.clone().multiplyScalar(refractionIndex1 / refractionIndex2).add(normal.clone().multiplyScalar(refractionIndex1 / refractionIndex2 * cosTheta1 - cosTheta2)).normalize();
+  }
+}
