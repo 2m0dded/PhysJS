@@ -1,10 +1,10 @@
 # PhysJS
 
 - Commits
-  [A] Addition
-  [F] Fix
-  [R] Remove
-  [S] Suggestion
+  [A] Addition, 
+  [F] Fix, 
+  [R] Remove, 
+  [S] Suggestion, 
 
 Introducing PhysJS, a powerful JavaScript physics engine designed for 3D games. With PhysJS, game developers can bring realistic physics simulations to their games, adding a new level of immersion and gameplay depth. Whether you're building an action-packed shooter or a puzzle-solving adventure, PhysJS provides the tools you need to create engaging and lifelike environments.
 
