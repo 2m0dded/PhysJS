@@ -1604,3 +1604,435 @@ function calculateSnellReflection(direction, normal, refractionIndex1, refractio
     return direction.clone().multiplyScalar(refractionIndex1 / refractionIndex2).add(normal.clone().multiplyScalar(refractionIndex1 / refractionIndex2 * cosTheta1 - cosTheta2)).normalize();
   }
 }
+
+function lerp(start, end, time) {
+  return (1 - time) * start + time * end;
+}
+
+function ease(start, end, time, easingFn = (t) => t) {
+  return (end - start) * easingFn(time) + start;
+}
+
+function animate(updateFn, fps) {
+  const frameInterval = 1000 / fps; // Calculate time between each frame
+  let lastFrameTime = 0;
+
+  function loop(currentTime) {
+    const deltaTime = currentTime - lastFrameTime;
+
+    if (deltaTime >= frameInterval) {
+      updateFn(deltaTime);
+      lastFrameTime = currentTime;
+    }
+
+    requestAnimationFrame(loop);
+  }
+
+  requestAnimationFrame(loop);
+}
+
+function rotatePoint(point, origin, angle) {
+  const s = Math.sin(angle);
+  const c = Math.cos(angle);
+
+  const translatedX = point.x - origin.x;
+  const translatedY = point.y - origin.y;
+
+  const rotatedX = translatedX * c - translatedY * s;
+  const rotatedY = translatedX * s + translatedY * c;
+
+  return {
+    x: rotatedX + origin.x,
+    y: rotatedY + origin.y,
+  };
+}
+
+function lerpVec2(start, end, time) {
+  const x = lerp(start.x, end.x, time);
+  const y = lerp(start.y, end.y, time);
+
+  return { x, y };
+}
+
+function easeVec2(start, end, time, easingFn = (t) => t) {
+  const x = ease(start.x, end.x, time, easingFn);
+  const y = ease(start.y, end.y, time, easingFn);
+
+  return { x, y };
+}
+
+function rotateVec2(vec, origin, angle) {
+  const { x, y } = vec;
+  const s = Math.sin(angle);
+  const c = Math.cos(angle);
+
+  const translatedX = x - origin.x;
+  const translatedY = y - origin.y;
+
+  const rotatedX = translatedX * c - translatedY * s;
+  const rotatedY = translatedX * s + translatedY * c;
+
+  return {
+    x: rotatedX + origin.x,
+    y: rotatedY + origin.y,
+  };
+}
+
+function lerpColor(start, end, time) {
+  const r = lerp(start.r, end.r, time);
+  const g = lerp(start.g, end.g, time);
+  const b = lerp(start.b, end.b, time);
+
+  return { r, g, b };
+}
+
+function clamp(value, min, max) {
+  return Math.min(Math.max(value, min), max);
+}
+
+function distanceVec2(a, b) {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+function dotVec2(a, b) {
+  return a.x * b.x + a.y * b.y;
+}
+
+function normalizeVec2(vec) {
+  const length = Math.sqrt(vec.x * vec.x + vec.y * vec.y);
+
+  if (length === 0) {
+    return { x: 0, y: 0 };
+  }
+
+  return { x: vec.x / length, y: vec.y / length };
+}
+
+function lerpAngle(start, end, time) {
+  let difference = end - start;
+
+  if (difference > Math.PI) {
+    difference -= 2 * Math.PI;
+  } else if (difference < -Math.PI) {
+    difference += 2 * Math.PI;
+  }
+
+  return start + difference * time;
+}
+
+function deepCopy(obj) {
+  return JSON.parse(JSON.stringify(obj));
+}
+
+function isObjectEmpty(obj) {
+  return Object.keys(obj).length === 0;
+}
+
+function generateUUID() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
+function isNumberInRange(num, min, max) {
+  return num >= min && num <= max;
+}
+
+function getRandomElement(array) {
+  return array[Math.floor(Math.random() * array.length)];
+}
+
+function shuffleArray(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+}
+
+function easeInOutQuad(t, b, c, d) {
+  t /= d / 2;
+  if (t < 1) {
+    return c / 2 * t * t + b;
+  }
+  t--;
+  return -c / 2 * (t * (t - 2) - 1) + b;
+}
+
+function sortObjectsByKey(objects, key) {
+  objects.sort(function(a, b) {
+    const valueA = a[key];
+    const valueB = b[key];
+    if (valueA < valueB) {
+      return -1;
+    }
+    if (valueA > valueB) {
+      return 1;
+    }
+    return 0;
+  });
+}
+
+function isPowerOfTwo(num) {
+  return (num & (num - 1)) === 0;
+}
+
+function roundToNearest(num, nearest) {
+  return Math.round(num / nearest) * nearest;
+}
+
+function capitalizeFirstLetter(string) {
+  return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
+function setCookie(name, value, days) {
+  const date = new Date();
+  date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
+  const expires = "expires=" + date.toUTCString();
+  document.cookie = name + "=" + value + ";" + expires + ";path=/";
+}
+
+function getCookie(name) {
+  const cookieName = name + "=";
+  const cookies = document.cookie.split(";");
+  for (let i = 0; i < cookies.length; i++) {
+    let cookie = cookies[i];
+    while (cookie.charAt(0) == " ") {
+      cookie = cookie.substring(1);
+    }
+    if (cookie.indexOf(cookieName) == 0) {
+      return cookie.substring(cookieName.length, cookie.length);
+    }
+  }
+  return "";
+}
+
+function setLocalStorageItem(key, value) {
+  localStorage.setItem(key, JSON.stringify(value));
+}
+
+function getLocalStorageItem(key) {
+  const value = localStorage.getItem(key);
+  return value ? JSON.parse(value) : null;
+}
+
+function setSessionStorageItem(key, value) {
+  sessionStorage.setItem(key, JSON.stringify(value));
+}
+
+function getSessionStorageItem(key) {
+  const value = sessionStorage.getItem(key);
+  return value ? JSON.parse(value) : null;
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function isMobile() {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
+
+function getScreenWidth() {
+  return window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
+}
+
+function getScreenHeight() {
+  return window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
+}
+
+function simulateFlashbang(position, intensity, duration, objects) {
+  const circle = new Circle(position, intensity);  
+  for (let i = 0; i < objects.length; i++) {
+    const object = objects[i];
+    if (circle.contains(object.position)) {
+      object.isBlinded = true;
+      object.blindDuration = duration;
+    }
+  }
+}
+
+function simulateExplosion(position, radius, objects) {
+  for (let i = 0; i < objects.length; i++) {
+    const object = objects[i];
+    const distance = position.distanceTo(object.position);
+    if (distance <= radius) {
+      const force = (1 - distance / radius) * 10;
+      const direction = object.position.clone().sub(position).normalize();
+      object.velocity.add(direction.multiplyScalar(force));
+      object.isHit = true;
+    }
+  }
+}
+
+class Weapon {
+  constructor(name, ammoType, magazineSize, maxAmmo) {
+    this.name = name;
+    this.ammoType = ammoType;
+    this.magazineSize = magazineSize;
+    this.maxAmmo = maxAmmo;
+    this.magazine = magazineSize;
+    this.ammo = maxAmmo - magazineSize;
+    this.fireMode = "single";
+    this.fireRate = 500;
+    this.lastFired = 0;
+  }
+  
+  reload() {
+    const missingAmmo = this.magazineSize - this.magazine;
+    if (this.ammo >= missingAmmo) {
+      this.magazine += missingAmmo;
+      this.ammo -= missingAmmo;
+    } else {
+      this.magazine += this.ammo;
+      this.ammo = 0;
+    }
+  }
+  
+  fire() {
+    if (this.magazine > 0) {
+      if (Date.now() - this.lastFired >= this.fireRate) {
+        switch (this.fireMode) {
+          case "single":
+            this.fireSingle();
+            break;
+          case "burst":
+            this.fireBurst();
+            break;
+          case "auto":
+            this.fireAuto();
+            break;
+        }
+        this.lastFired = Date.now();
+        this.magazine--;
+        return true;
+      } else {
+        return false;
+      }
+    } else {
+      return false;
+    }
+  }
+  
+  fireSingle() {
+    // Perform the firing action for a single shot here...
+  }
+  
+  fireBurst() {
+    // Perform the firing action for a burst of shots here...
+  }
+  
+  fireAuto() {
+    // Perform the firing action for full-auto fire here...
+  }
+  
+  switchFireMode() {
+    switch (this.fireMode) {
+      case "single":
+        this.fireMode = "burst";
+        break;
+      case "burst":
+        this.fireMode = "auto";
+        break;
+      case "auto":
+        this.fireMode = "single";
+        break;
+    }
+    console.log(`Switched to ${this.fireMode} mode!`);
+  }
+  
+  addAmmo(amount) {
+    const totalAmmo = this.ammo + amount;
+    if (totalAmmo > this.maxAmmo) {
+      this.ammo = this.maxAmmo;
+    } else {
+      this.ammo = totalAmmo;
+    }
+  }
+}
+
+function createTracer(startPos, endPos, color, width) {
+  let vertices = [
+    startPos.x, startPos.y, startPos.z,
+    endPos.x, endPos.y, endPos.z
+  ];
+  let vertexBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+  let shaderProgram = createShaderProgram(vertexShaderSource, fragmentShaderSource);
+  gl.useProgram(shaderProgram);
+  gl.uniformMatrix4fv(shaderProgram.uModelViewMatrix, false, modelViewMatrix);
+  gl.uniformMatrix4fv(shaderProgram.uProjectionMatrix, false, projectionMatrix);
+  gl.uniform4f(shaderProgram.uColor, color.r, color.g, color.b, color.a);
+  gl.uniform1f(shaderProgram.uWidth, width);
+  gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+  gl.vertexAttribPointer(shaderProgram.aVertexPosition, 3, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(shaderProgram.aVertexPosition);
+  gl.drawArrays(gl.LINES, 0, vertices.length / 3);
+}
+
+function reconstructPath(endNode) {
+  let path = [endNode];
+  let currentNode = endNode;
+  while (currentNode.parent) {
+    path.push(currentNode.parent);
+    currentNode = currentNode.parent;
+  }
+  return path.reverse();
+}
+
+function distance(node1, node2) {
+  let dx = node1.x - node2.x;
+  let dy = node1.y - node2.y;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+function heuristic(node1, node2) {
+  return Math.abs(node1.x - node2.x) + Math.abs(node1.y - node2.y);
+}
+
+function findPath(startNode, endNode, graph) {
+  let openList = [startNode];
+  let closedList = [];
+  startNode.gScore = 0;
+  startNode.fScore = heuristic(startNode, endNode);
+  while (openList.length > 0) {
+    let current = openList.reduce((minNode, node) => node.fScore < minNode.fScore ? node : minNode);
+    if (current === endNode) {
+      return reconstructPath(endNode);
+    }
+    openList = openList.filter(node => node !== current);
+    closedList.push(current);
+    for (let neighbor of current.neighbors) {
+      if (closedList.includes(neighbor)) {
+        continue;
+      }      
+      let tentativeGScore = current.gScore + distance(current, neighbor);      
+      if (!openList.includes(neighbor)) {
+        openList.push(neighbor);
+      } else if (tentativeGScore >= neighbor.gScore) {
+        continue;
+      }
+      neighbor.parent = current;
+      neighbor.gScore = tentativeGScore;
+      neighbor.fScore = tentativeGScore + heuristic(neighbor, endNode);
+    }
+  }  
+  return null;
+}
+
+function attachAttachment2D(attachment, weapon) {
+  weapon.attachments.push(attachment);
+  if (attachment.type === "scope") {
+    weapon.accuracy += 10;
+    weapon.range += 50;
+  } else if (attachment.type === "silencer") {
+    weapon.noise -= 5;
+  } else if (attachment.type === "extended_magazine") {
+    weapon.magazine_size *= 2;
+  }
+  weapon.sprite.src = "weapon_with_" + attachment.type + ".png";
+}
