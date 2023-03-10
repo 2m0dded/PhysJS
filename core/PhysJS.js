@@ -1422,3 +1422,81 @@ function createProximityAudio(src, maxDistance, fadeInTime, fadeOutTime) {
 
   return { audio, updateVolume };
 }
+
+function vectorNorm(u) {
+  return Math.sqrt(dotProduct(u, u));
+}
+
+function fft(signal) {
+  const n = signal.length;
+  if (n === 1) {
+    return signal;
+  }
+  const even = new Array(n / 2);
+  const odd = new Array(n / 2);
+  for (let i = 0; i < n / 2; i++) {
+    even[i] = signal[2 * i];
+    odd[i] = signal[2 * i + 1];
+  }
+  const spectrumEven = fft(even);
+  const spectrumOdd = fft(odd);
+  const spectrum = new Array(n);
+  for (let i = 0; i < n / 2; i++) {
+    const angle = -2 * Math.PI * i / n;
+    const twiddleReal = Math.cos(angle);
+    const twiddleImag = Math.sin(angle);
+    const re = spectrumEven[i][0];
+    const im = spectrumEven[i][1];
+    const productRe = re * twiddleReal - im * twiddleImag;
+    const productIm = re * twiddleImag + im * twiddleReal;
+    spectrum[i] = [productRe + spectrumOdd[i][0], productIm + spectrumOdd[i][1]];
+    spectrum[i + n / 2] = [productRe - spectrumOdd[i][0], productIm - spectrumOdd[i][1]];
+  }
+  return spectrum;
+}
+
+function calculateWaveFunction(x, t, V, m, hbar) {
+  
+  const psi0 = /* initial wave function */;
+  
+  const dx = /* step size */;
+  const dt = /* time step size */;
+  
+  const psi = [psi0];
+  
+  for (let n = 1; n <= t/dt; n++) {
+    const psi_n = psi[n-1];
+    
+    // Iterate over positions
+    for (let i = 1; i < x.length-1; i++) {
+      const x_i = x[i];
+      const V_i = V(x_i);
+      
+      const psi_i = psi_n[i];
+      const psi_iplus1 = psi_n[i+1];
+      const psi_iminus1 = psi_n[i-1];
+      
+      const k = 2*m/hbar**2 * (V_i - E);
+      
+      const psi_i_new = psi_i + (k*dt/2) * (psi_iplus1 - 2*psi_i + psi_iminus1);
+      psi[n][i] = psi_i_new;
+    }
+  }
+  
+  return psi;
+}
+
+function calculateSpinWaveDispersion(kx, ky, J, S, M) {
+  const N = kx.length;
+  const omega = [];
+  
+  for (let i = 0; i < N; i++) {
+    const k = Math.sqrt(kx[i]**2 + ky[i]**2);
+    
+    const J_k = J(k);
+    const w = S * Math.sqrt(J_k * (J_k + M));
+    omega.push(w);
+  }
+  
+  return omega;
+}
