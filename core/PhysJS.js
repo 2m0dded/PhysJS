@@ -1,5 +1,5 @@
 const canvas = document.getElementById('game-canvas');
-
+const THREE = window.THREE;
 const gl = canvas.getContext('webgl');
 
 gl.viewport(0, 0, canvas.width, canvas.height);
