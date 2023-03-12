@@ -2391,3 +2391,31 @@ function createCompositeBody(bodies) {
 
   return compositeBody;
 }
+
+function createWire(startPoint, endPoint, thickness, stiffness) {
+  var wire = {
+    startPoint: startPoint,
+    endPoint: endPoint,
+    thickness: thickness,
+    stiffness: stiffness,
+    length: distance(startPoint, endPoint),
+    segments: [],
+    update: function() {
+      // update wire segments based on physics simulation
+    }
+  };  
+  var numSegments = Math.ceil(wire.length / (thickness * 2));
+  var segmentLength = wire.length / numSegments;
+  for (var i = 0; i < numSegments; i++) {
+    var segmentStart = interpolate(wire.startPoint, wire.endPoint, i / numSegments);
+    var segmentEnd = interpolate(wire.startPoint, wire.endPoint, (i + 1) / numSegments);
+    wire.segments.push({
+      startPoint: segmentStart,
+      endPoint: segmentEnd,
+      length: segmentLength,
+      force: new Vector2(0, 0)
+    });
+  }
+  
+  return wire;
+}
