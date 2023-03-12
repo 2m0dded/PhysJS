@@ -19,6 +19,7 @@
   <canvas id="game-canvas"></canvas>
   <script src="PhysJS.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.17.1/matter.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="webgl.js" type="module" defer></script>
 </body>
 
