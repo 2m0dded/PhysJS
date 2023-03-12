@@ -10,6 +10,11 @@ gl.clearDepth(1.0);
 gl.enable(gl.DEPTH_TEST);
 gl.depthFunc(gl.LEQUAL);
 
+const { Engine, World, Bodies, Constraint } = Matter;
+
+const engine = Engine.create();
+const world = engine.world;
+
 let vertexShader = null;
 let fragmentShader = null;
 let shaderSource = null;
@@ -2039,4 +2044,350 @@ function attachAttachment2D(attachment, weapon) {
 
 function mapRange(value, inMin, inMax, outMin, outMax) {
   return (value - inMin) * (outMax - outMin) / (inMax - inMin) + outMin;
+}
+
+class PhysicsBody {
+  constructor(type, x, y, width, height, density, friction, restitution) {
+    this.type = type;
+    this.x = x;
+    this.y = y;
+    this.width = width;
+    this.height = height;
+    this.density = density;
+    this.friction = friction;
+    this.restitution = restitution;
+    this.body = Matter.Bodies.rectangle(x, y, width, height, {
+      density: density,
+      friction: friction,
+      restitution: restitution,
+      inertia: Infinity,
+      isStatic: type === 'static',
+      isKinematic: type === 'kinematic'
+    });
+    Matter.World.add(world, this.body);
+  }
+  
+  applyForce(force) {
+    Matter.Body.applyForce(this.body, this.body.position, force);
+  }
+  
+  applyImpulse(impulse) {
+    Matter.Body.applyForce(this.body, this.body.position, impulse);
+  }
+  
+  applyTorque(torque) {
+    Matter.Body.applyForce(this.body, this.body.position, torque);
+  }
+  
+  applyAngularImpulse(angularImpulse) {
+    Matter.Body.applyForce(this.body, this.body.position, angularImpulse);
+  }
+  
+  destroy() {
+    Matter.World.remove(world, this.body);
+  }
+}
+
+class PhysicsJoint {
+  constructor(bodyA, bodyB, type, options) {
+    switch (type) {
+      case 'revolute':
+        this.joint = Matter.Constraint.create({
+          bodyA: bodyA.body,
+          bodyB: bodyB.body,
+          pointA: { x: 0, y: 0 },
+          pointB: { x: 0, y: 0 },
+          stiffness: options.stiffness || 0.1,
+          length: options.length || 0,
+          damping: options.damping || 0,
+          angle: options.angle || 0
+        });
+        break;
+      case 'distance':
+        this.joint = Matter.Constraint.create({
+          bodyA: bodyA.body,
+          bodyB: bodyB.body,
+          pointA: { x: options.x1, y: options.y1 },
+          pointB: { x: options.x2, y: options.y2 },
+          stiffness: options.stiffness || 0.1,
+          length: options.length || 0,
+          damping: options.damping || 0
+        });
+        break;
+      default:
+        throw new Error(`Invalid joint type: ${type}`);
+    }
+    Matter.World.add(world, this.joint);
+  }
+  
+  destroy() {
+    Matter.World.remove(world, this.joint);
+  }
+}
+
+
+function createBody(type, x, y, width, height, density, friction, restitution) {
+  const body = new PhysicsBody(type, x, y, width, height, density, friction, restitution);
+  return body;
+}
+
+function createJoint(bodyA, bodyB, type, options) {
+  const joint = new PhysicsJoint(bodyA, bodyB, type, options);
+  return joint;
+}
+
+function applyAngularImpulse(body, angularImpulse) {
+  body.applyAngularImpulse(angularImpulse);
+}
+
+function applyTorque(body, torque) {
+  body.applyTorque(torque);
+}
+
+function applyImpulse(body, impulse) {
+  body.applyImpulse(impulse);
+}
+
+function applyForce(body, force) {
+  body.applyForce(force);
+}
+
+function ragdoll(body, force) {
+  const vertices = body.vertices;  
+  const joints = [];
+  for (let i = 0; i < vertices.length; i++) {
+    const joint = new PhysicsBody('dynamic', vertices[i].x, vertices[i].y, 10, 10, 1, 0.2, 0.2);
+    joints.push(joint);
+  } 
+  const constraints = [];
+  for (let i = 0; i < joints.length - 1; i++) {
+    const constraint = new PhysicsJoint(joints[i], joints[i + 1], 'distance', {
+      stiffness: 0.5,
+      length: 20
+    });
+    constraints.push(constraint);
+  }  
+  if (force) {
+    for (let i = 0; i < joints.length; i++) {
+      joints[i].applyForce(force);
+    }
+  }  
+  Matter.World.remove(world, body);
+  Matter.World.add(world, joints);
+  Matter.World.add(world, constraints);
+}
+
+function createRopeJoint(bodyA, bodyB, maxLength, options = {}) {
+  const defaultOptions = {
+    stiffness: 1,
+    damping: 0.1,
+  };
+  options = Object.assign(defaultOptions, options);
+
+  const ropeJoint = Matter.Constraint.create({
+    bodyA,
+    bodyB,
+    length: maxLength,
+    stiffness: options.stiffness,
+    damping: options.damping,
+  });
+
+  Matter.World.add(world, ropeJoint);
+  return ropeJoint;
+}
+
+function createSliderJoint(bodyA, bodyB, axis, options = {}) {
+  const defaultOptions = {
+    stiffness: 1,
+    damping: 0.1,
+  };
+  options = Object.assign(defaultOptions, options);
+  const sliderJoint = Matter.Constraint.create({
+    bodyA,
+    bodyB,
+    pointA: { x: 0, y: 0 },
+    pointB: { x: 0, y: 0 },
+    length: 0,
+    stiffness: options.stiffness,
+    damping: options.damping,
+  });
+  Matter.World.add(world, sliderJoint);  
+  sliderJoint.axis = axis;
+  return sliderJoint;
+}
+
+function createPinJoint(bodyA, bodyB, pin, options = {}) {
+  const defaultOptions = {
+    stiffness: 1,
+    damping: 0.1,
+  };
+  options = Object.assign(defaultOptions, options);
+
+  const pinJoint = Matter.Constraint.create({
+    bodyA,
+    bodyB,
+    pointA: { x: pin.x - bodyA.position.x, y: pin.y - bodyA.position.y },
+    pointB: { x: pin.x - bodyB.position.x, y: pin.y - bodyB.position.y },
+    length: 0,
+    stiffness: options.stiffness,
+    damping: options.damping,
+  });
+
+  Matter.World.add(world, pinJoint);
+
+  return pinJoint;
+}
+
+function createGearJoint(bodyA, bodyB, jointA, jointB, ratio) {
+  const gearJoint = Matter.Constraint.create({
+    bodyA,
+    bodyB,
+    pointA: { x: jointA.bodyA.position.x - bodyA.position.x, y: jointA.bodyA.position.y - bodyA.position.y },
+    pointB: { x: jointB.bodyA.position.x - bodyB.position.x, y: jointB.bodyA.position.y - bodyB.position.y },
+    length: 0,
+    stiffness: 1,
+    damping: 0,
+    render: {
+      visible: false,
+    },
+  });
+
+  Matter.World.add(world, gearJoint);
+
+  Matter.Events.on(engine, 'beforeUpdate', () => {
+    const angleA = jointA.bodyB.angle - jointA.bodyA.angle;
+    const angleB = jointB.bodyB.angle - jointB.bodyA.angle;
+    Matter.Body.setAngularVelocity(bodyA, -(angleA * ratio + angleB));
+    Matter.Body.setAngularVelocity(bodyB, angleA + angleB / ratio);
+  });
+
+  return gearJoint;
+}
+
+function createSpringJoint(bodyA, bodyB, pointA, pointB, stiffness, damping) {
+  const springJoint = Matter.Constraint.create({
+    bodyA,
+    bodyB,
+    pointA: { x: pointA.x - bodyA.position.x, y: pointA.y - bodyA.position.y },
+    pointB: { x: pointB.x - bodyB.position.x, y: pointB.y - bodyB.position.y },
+    length: Math.sqrt((pointB.x - pointA.x) ** 2 + (pointB.y - pointA.y) ** 2),
+    stiffness,
+    damping,
+    render: {
+      visible: false,
+    },
+  });
+
+  Matter.World.add(world, springJoint);
+
+  return springJoint;
+}
+
+function rotateBody(body, angle) {
+  Matter.Body.rotate(body, angle);
+}
+
+function setInertia(body, inertia) {
+  Matter.Body.setInertia(body, inertia);
+}
+
+function setMass(body, mass) {
+  Matter.Body.setMass(body, mass);
+}
+
+function setVertices(body, vertices) {
+  Matter.Body.setVertices(body, vertices);
+}
+
+function setAngle(body, angle) {
+  Matter.Body.setAngle(body, angle);
+}
+
+function setRenderProperties(body, options) {
+  Matter.Body.set(body, 'render', options);
+}
+
+function createDebris(gl, position, velocity, scale) {
+  var buffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+  var vertices = [
+    scale, scale, scale,
+    -scale, scale, scale,
+    -scale, -scale, scale,
+    scale, -scale, scale,
+    scale, scale, -scale,
+    -scale, scale, -scale,
+    -scale, -scale, -scale,
+    scale, -scale, -scale
+  ];
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+  var vao = gl.createVertexArray();
+  gl.bindVertexArray(vao);
+  gl.enableVertexAttribArray(0);
+  gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
+  var debris = {
+    position: position,
+    velocity: velocity,
+    scale: scale,
+    buffer: buffer,
+    vao: vao
+  };
+  debrisList.push(debris);
+}
+
+function updateDebris(gl, deltaTime) {
+  for (var i = 0; i < debrisList.length; i++) {
+    var debris = debrisList[i];
+    debris.position.x += debris.velocity.x * deltaTime;
+    debris.position.y += debris.velocity.y * deltaTime;
+    debris.position.z += debris.velocity.z * deltaTime;
+    gl.bindVertexArray(debris.vao);
+    gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
+    gl.drawArrays(gl.TRIANGLE_FAN, 4, 4);
+    gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
+    gl.drawArrays(gl.TRIANGLE_FAN, 4, 4);
+    gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
+    gl.drawArrays(gl.TRIANGLE_FAN, 4, 4);
+  }
+}
+
+function setBodyPosition(body, position) {
+  body.position = position.clone();
+  body.previousPosition = position.clone();
+}
+
+function setBodyInertiaTensor(body, inertiaTensor) {
+  body.inertiaTensor = inertiaTensor.clone();
+  body.inverseInertiaTensor = inertiaTensor.clone().inverse();
+}
+
+function createCompositeBody(bodies) {
+  var compositeBody = {
+    bodies: bodies,
+    position: new Vector3(),
+    velocity: new Vector3(),
+    force: new Vector3(),
+    mass: 0,
+    inverseMass: 0,
+    inertiaTensor: new Matrix3(),
+    inverseInertiaTensor: new Matrix3(),
+    rotation: new Quaternion(),
+    angle: 0,
+    torque: new Vector3(),
+    previousPosition: new Vector3(),
+    previousAngle: 0,
+    isComposite: true
+  };
+
+  for (var i = 0; i < bodies.length; i++) {
+    var body = bodies[i];
+
+    compositeBody.mass += body.mass;
+    compositeBody.inertiaTensor.add(body.inertiaTensor);
+  }
+
+  compositeBody.inverseMass = 1 / compositeBody.mass;
+  compositeBody.inverseInertiaTensor = compositeBody.inertiaTensor.clone().inverse();
+
+  return compositeBody;
 }
