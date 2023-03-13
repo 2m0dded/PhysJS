@@ -2419,3 +2419,32 @@ function createWire(startPoint, endPoint, thickness, stiffness) {
   
   return wire;
 }
+
+function setCollisionCategory(object, category) {
+  object.collisionCategory = category;
+  object.collisionMask = 0;
+  for (let i = 0; i < collisionCategories.length; i++) {
+    const collisionCategory = collisionCategories[i];
+    if (object.collisionCategory === collisionCategory) {
+      object.collisionMask |= Math.pow(2, i);
+    }
+  }
+}
+
+function setCollisionMask(object, mask) {
+  object.collisionMask = mask;
+  for (let i = 0; i < gameObjects.length; i++) {
+    const otherObject = gameObjects[i];
+    if (otherObject !== object) {
+      const canCollide = (otherObject.collisionCategory & object.collisionMask) !== 0;
+      if (canCollide) {
+        otherObject.collidesWith.push(object);
+      } else {
+        const index = otherObject.collidesWith.indexOf(object);
+        if (index !== -1) {
+          otherObject.collidesWith.splice(index, 1);
+        }
+      }
+    }
+  }
+}
