@@ -2448,3 +2448,650 @@ function setCollisionMask(object, mask) {
     }
   }
 }
+
+function create
+(radius, segments) {
+  const vertexData = [];
+  const indexData = [];
+  
+  for (let j = 0; j <= segments; j++) {
+    const lat = Math.PI / 2 - j * Math.PI / segments;
+    const z = radius * Math.sin(lat);
+    const r = radius * Math.cos(lat);
+
+    for (let i = 0; i <= segments; i++) {
+      const lon = i * 2 * Math.PI / segments;
+      const x = r * Math.sin(lon);
+      const y = r * Math.cos(lon);
+
+      vertexData.push(x, y, z);
+      vertexData.push(i / segments, j / segments);
+
+      if (i < segments && j < segments) {
+        const a = j * (segments + 1) + i;
+        const b = j * (segments + 1) + i + 1;
+        const c = (j + 1) * (segments + 1) + i;
+        const d = (j + 1) * (segments + 1) + i + 1;
+
+        indexData.push(a, d, c);
+        indexData.push(d, a, b);
+      }
+    }
+  }
+
+  const vertexBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexData), gl.STATIC_DRAW);
+
+  const indexBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indexData), gl.STATIC_DRAW);
+
+  return {
+    vertexBuffer,
+    indexBuffer,
+    numIndices: indexData.length
+  };
+}
+
+function createGlobe(radius, segments, textureSrc) {
+  const sphere = createSphere(radius, segments);
+  const texture = loadTexture(textureSrc);
+
+  return {
+    vertexBuffer: sphere.vertexBuffer,
+    indexBuffer: sphere.indexBuffer,
+    numIndices: sphere.numIndices,
+    texture
+  };
+}
+
+const program = {
+  attributes: {
+    position: gl.getAttribLocation(shaderProgram, 'aPosition'),
+    texCoord: gl.getAttribLocation(shaderProgram, 'aTexCoord'),
+  },
+  uniforms: {
+    viewMatrix: gl.getUniformLocation(shaderProgram, 'uViewMatrix'),
+    projectionMatrix: gl.getUniformLocation(shaderProgram, 'uProjectionMatrix'),
+    texture: gl.getUniformLocation(shaderProgram, 'uTexture'),
+  },
+};
+
+function drawGlobe(globe, viewMatrix, projectionMatrix) {
+  // Bind the vertex buffer
+  gl.bindBuffer(gl.ARRAY_BUFFER, globe.vertexBuffer);
+  
+  // Bind the index buffer
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, globe.indexBuffer);
+  
+  // Set the shader program uniforms
+  gl.uniformMatrix4fv(program.uniforms.viewMatrix, false, viewMatrix);
+  gl.uniformMatrix4fv(program.uniforms.projectionMatrix, false, projectionMatrix);
+  
+  // Bind the texture
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, globe.texture);
+  gl.uniform1i(program.uniforms.texture, 0);
+  
+  // Enable the vertex attribute arrays
+  gl.enableVertexAttribArray(program.attributes.position);
+  gl.enableVertexAttribArray(program.attributes.texCoord);
+  
+  // Set the vertex attribute pointers
+  gl.vertexAttribPointer(program.attributes.position, 3, gl.FLOAT, false, 20, 0);
+  gl.vertexAttribPointer(program.attributes.texCoord, 2, gl.FLOAT, false, 20, 12);
+  
+  // Draw the sphere
+  gl.drawElements(gl.TRIANGLES, globe.numIndices, gl.UNSIGNED_SHORT, 0);
+  
+  // Disable the vertex attribute arrays
+  gl.disableVertexAttribArray(program.attributes.position);
+  gl.disableVertexAttribArray(program.attributes.texCoord);
+}
+
+function pointToLatLong(point) {
+  const r = Math.sqrt(point[0] ** 2 + point[1] ** 2 + point[2] ** 2);
+  const lat = Math.asin(point[2] / r) * 180 / Math.PI;
+  const long = Math.atan2(point[1], point[0]) * 180 / Math.PI;
+  return { lat, long };
+}
+
+function pointsToLatLong(points) {
+  return points.map(pointToLatLong);
+}
+
+function latLongToPoint(lat, long) {
+  const phi = lat * Math.PI / 180;
+  const theta = long * Math.PI / 180;
+  const x = Math.cos(theta) * Math.cos(phi);
+  const y = Math.sin(theta) * Math.cos(phi);
+  const z = Math.sin(phi);
+  return [x, y, z];
+}
+
+function latLongsToPoints(latLongs) {
+  return latLongs.map(({ lat, long }) => latLongToPoint(lat, long));
+}
+
+function magnitude(vector) {
+  return Math.sqrt(vector[0] ** 2 + vector[1] ** 2 + vector[2] ** 2);
+}
+
+function createContrailParticles(numParticles, particleSize, particleColor) {
+  const particles = [];
+  const particleGeometry = new THREE.Geometry();
+  const particleMaterial = new THREE.PointsMaterial({
+    size: particleSize,
+    color: particleColor,
+    blending: THREE.AdditiveBlending,
+    depthTest: false,
+    transparent: true,
+  });
+
+  for (let i = 0; i < numParticles; i++) {
+    const particle = new THREE.Vector3(
+      Math.random() * 10 - 5,
+      Math.random() * 10 - 5,
+      Math.random() * 10 - 5
+    );
+    particleGeometry.vertices.push(particle);
+    particles.push(particle);
+  }
+
+  const particleSystem = new THREE.Points(particleGeometry, particleMaterial);
+
+  function updateContrailParticles(airplanePosition) {
+    for (let i = 0; i < particles.length; i++) {
+      particles[i].x += (Math.random() - 0.5) * 0.02;
+      particles[i].y += (Math.random() - 0.5) * 0.02;
+      particles[i].z += (Math.random() - 0.5) * 0.02;
+      particles[i].x -= (particles[i].x - airplanePosition.x) * 0.005;
+      particles[i].y -= (particles[i].y - airplanePosition.y) * 0.005;
+      particles[i].z -= (particles[i].z - airplanePosition.z) * 0.005;
+    }
+    particleSystem.geometry.verticesNeedUpdate = true;
+  }
+
+  return { particleSystem, updateContrailParticles };
+}
+
+function computeBuoyantForce(object, waterLevel, waterDensity, gravity) {
+  const volume = object.geometry.computeVolume();
+  const submergedVolume = computeSubmergedVolume(object, waterLevel);
+  const buoyancyForce = submergedVolume * waterDensity * gravity;
+  return buoyancyForce;
+}
+
+function computeSubmergedVolume(object, waterLevel) {
+  const vertices = object.geometry.vertices;
+  let submergedVolume = 0;
+
+  for (let i = 0; i < object.geometry.faces.length; i++) {
+    const face = object.geometry.faces[i];
+    const v1 = vertices[face.a];
+    const v2 = vertices[face.b];
+    const v3 = vertices[face.c];
+
+    if (v1.y < waterLevel && v2.y < waterLevel && v3.y < waterLevel) {
+      submergedVolume += computeTriangleVolume(v1, v2, v3, waterLevel);
+    } else if (v1.y < waterLevel && v2.y < waterLevel) {
+      const p1 = computeIntersectionPoint(v1, v2, waterLevel);
+      const p2 = v3;
+      submergedVolume += computeTriangleVolume(v1, p1, p2, waterLevel);
+    } else if (v1.y < waterLevel && v3.y < waterLevel) {
+      const p1 = computeIntersectionPoint(v1, v3, waterLevel);
+      const p2 = v2;
+      submergedVolume += computeTriangleVolume(v1, p1, p2, waterLevel);
+    } else if (v2.y < waterLevel && v3.y < waterLevel) {
+      const p1 = computeIntersectionPoint(v2, v3, waterLevel);
+      const p2 = v1;
+      submergedVolume += computeTriangleVolume(v2, p1, p2, waterLevel);
+    }
+  }
+
+  return submergedVolume;
+}
+
+function computeTriangleVolume(v1, v2, v3, waterLevel) {
+  const p1 = computeIntersectionPoint(v1, v2, waterLevel);
+  const p2 = computeIntersectionPoint(v1, v3, waterLevel);
+  const p3 = computeIntersectionPoint(v2, v3, waterLevel);
+  const volume = Math.abs(p1.clone().sub(p2).cross(p1.clone().sub(p3)).dot(v1.clone().sub(p1))) / 6;
+  return volume;
+}
+
+function computeIntersectionPoint(p1, p2, waterLevel) {
+  const t = (waterLevel - p1.y) / (p2.y - p1.y);
+  const x = p1.x + t * (p2.x - p1.x);
+  const z = p1.z + t * (p2.z - p1.z);
+  return new THREE.Vector3(x, waterLevel, z);
+}
+
+function fourierTransform(signal) {
+  const n = signal.length;
+  const spectrum = new Array(n);
+  for (let k = 0; k < n; k++) {
+    let re = 0, im = 0;
+    for (let t = 0; t < n; t++) {
+      const theta = (2 * Math.PI * k * t) / n;
+      re += signal[t] * Math.cos(theta);
+      im -= signal[t] * Math.sin(theta);
+    }
+    spectrum[k] = Math.sqrt(re * re + im * im);
+  }
+  return spectrum;
+}
+
+function bezierCurve(t, points) {
+  const n = points.length - 1;
+  let x = 0, y = 0;
+  for (let i = 0; i <= n; i++) {
+    const binom = binomialCoefficient(n, i);
+    const b = binom * Math.pow(1 - t, n - i) * Math.pow(t, i);
+    x += points[i].x * b;
+    y += points[i].y * b;
+  }
+  return new THREE.Vector2(x, y);
+}
+
+function binomialCoefficient(n, k) {
+  let coeff = 1;
+  for (let i = n - k + 1; i <= n; i++) {
+    coeff *= i;
+  }
+  for (let i = 1; i <= k; i++) {
+    coeff /= i;
+  }
+  return coeff;
+}
+
+function svd(m) {
+    let u = [],
+        v = [],
+        s = [],
+        eps = Number.MIN_VALUE,
+        t = 0;
+    for (let i = 0; i < m[0].length; i++) {
+        let g = 0,
+            e = 0;
+        u[i] = [];
+        for (let j = 0; j < m.length; j++) u[i][j] = m[j][i];
+        for (let j = i; j < m[0].length; j++) v[j] = [], s[j] = 0;
+        for (let j = i; j < m[0].length; j++) {
+            let sum = 0;
+            for (let k = 0; k < m.length; k++) sum += u[i][k] * u[j][k];
+            v[j][i] = sum;
+            if (i == j) {
+                t = sum
+            } else if (Math.abs(sum) > Math.abs(t)) {
+                t = sum
+            }
+        }
+        for (let j = i; j < m[0].length; j++) {
+            s[j] = (Math.abs(t) < eps) ? 0 : Math.sqrt(v[j][i] * v[j][i] + t * t);
+            if (s[j] != 0) {
+                let f = Math.sqrt(v[j][i] * v[j][i] + t * t);
+                if (v[j][i] < 0) f = -f;
+                s[j] = t * (f + s[j]);
+                let scale = 1 / f;
+                for (let k = 0; k < m.length; k++) u[i][k] *= scale
+            }
+        }
+        s[i] = t;
+        for (let j = i + 1; j < m[0].length; j++) {
+            if (s[i] != 0) {
+                let sum = 0;
+                for (let k = 0; k < m.length; k++) sum += u[i][k] * u[j][k];
+                let f = sum / s[i];
+                for (let k = 0; k < m.length; k++) u[j][k] -= f * u[i][k]
+            }
+        }
+    }
+    let vt = [];
+    for (let i = 0; i < m[0].length; i++) {
+        vt[i] = [];
+        for (let j = 0; j < m[0].length; j++) vt[i][j] = (i == j) ? 1 : 0;
+    }
+    for (let i = Math.min(m[0].length - 1, m.length) - 1; i >= 0; i--) {
+        if (s[i] != 0) {
+            for (let j = i + 1; j < m[0].length; j++) {
+                let sum = 0;
+                for (let k = i; k < m.length; k++) sum += u[k][i] * vt[j][k];
+                let f = sum / s[i];
+                for (let k = i; k < m.length; k++) vt[j][k] -= f * u[k][i]
+            }
+        }
+    }
+}
+return [u, s, vt]
+}
+
+function slerp(q1, q2, t) {
+  let cosTheta = q1.dot(q2);
+  if (cosTheta < 0) {
+    q2 = q2.negate();
+    cosTheta = -cosTheta;
+  }
+  let k0, k1;
+  if (cosTheta > 0.9999) {
+    k0 = 1 - t;
+    k1 = t;
+  } else {
+    const sinTheta = Math.sqrt(1 - cosTheta * cosTheta);
+    const theta = Math.atan2(sinTheta, cosTheta);
+    k0 = Math.sin((1 - t) * theta) / sinTheta;
+    k1 = Math.sin(t * theta) / sinTheta;
+  }
+  const result = q1.multiply(k0).add(q2.multiply(k1));
+  return result.normalize();
+}
+
+function relu(x) {
+  return Math.max(0, x);
+}
+
+function meanSquaredError(yTrue, yPred) {
+  const sumOfSquares = yTrue.reduce((acc, val, i) => acc + Math.pow(val - yPred[i], 2), 0);
+  return sumOfSquares / yTrue.length;
+}
+
+function backpropagation(inputs, targets, weights, biases) {
+  const z1 = dot(inputs, weights[0]).add(biases[0]);
+  const a1 = z1.map(relu);
+  const z2 = dot(a1, weights[1]).add(biases[1]);
+  const outputs = z2.map(softmax);
+  
+  const delta3 = sub(outputs, targets);
+  
+  const delta2 = dot(delta3, weights[1].transpose()).multiply1(a1.map(drelu));
+  const delta1 = dot(delta2, weights[0].transpose()).multiply1(inputs.map(drelu));
+  
+  const dWeights2 = dot(a1.transpose(), delta3);
+  const dBiases2 = sumRows(delta3);
+  const dWeights1 = dot(inputs.transpose(), delta1);
+  const dBiases1 = sumRows(delta1);
+  
+  return {dWeights1, dBiases1, dWeights2, dBiases2};
+}
+
+function dot(a, b) {
+  const m = a.shape[0];
+  const n = b.shape[1];
+  const p = a.shape[1];
+  const c = new Matrix(m, n);
+  for (let i = 0; i < m; i++) {
+    for (let j = 0; j < n; j++) {
+      let sum = 0;
+      for (let k = 0; k < p; k++) {
+        sum += a.get(i, k) * b.get(k, j);
+      }
+      c.set(i, j, sum);
+    }
+  }
+  return c;
+}
+
+function relu(x) {
+  return Math.max(0, x);
+}
+
+function softmax(x) {
+  const exps = x.map(Math.exp);
+  const sum = exps.reduce((acc, cur) => acc + cur, 0);
+  return exps.map((e) => e / sum);
+}
+
+function sub(a, b) {
+  const c = new Matrix(a.shape[0], a.shape[1]);
+  for (let i = 0; i < a.shape[0]; i++) {
+    for (let j = 0; j < a.shape[1]; j++) {
+      c.set(i, j, a.get(i, j) - b.get(i, j));
+    }
+  }
+  return c;
+}
+
+function transpose(a) {
+  const b = new Matrix(a.shape[1], a.shape[0]);
+  for (let i = 0; i < a.shape[0]; i++) {
+    for (let j = 0; j < a.shape[1]; j++) {
+      b.set(j, i, a.get(i, j));
+    }
+  }
+  return b;
+}
+
+function sumRows(a) {
+  const b = new Matrix(1, a.shape[1]);
+  for (let i = 0; i < a.shape[1]; i++) {
+    let sum = 0;
+    for (let j = 0; j < a.shape[0]; j++) {
+      sum += a.get(j, i);
+    }
+    b.set(0, i, sum);
+  }
+  return b;
+}
+
+function multiply1(a, b) {
+  const c = new Matrix(a.shape[0], a.shape[1]);
+  for (let i = 0; i < a.shape[0]; i++) {
+    for (let j = 0; j < a.shape[1]; j++) {
+      c.set(i, j, a.get(i, j) * b.get(i, j));
+    }
+  }
+  return c;
+}
+
+function drelu(x) {
+  return x > 0 ? 1 : 0;
+}
+
+function rayCast(origin, direction, objects) {
+  let closestObject = null;
+  let closestDistance = Infinity;
+  for (let i = 0; i < objects.length; i++) {
+    const object = objects[i];
+    const intersect = intersectObject(origin, direction, object);
+    if (intersect) {
+      const distance = origin.distanceTo(intersect);
+      if (distance < closestDistance) {
+        closestObject = object;
+        closestDistance = distance;
+      }
+    }
+  }
+  return closestObject ? {
+    object: closestObject,
+    distance: closestDistance,
+    point: origin.add(direction.multiply(closestDistance))
+  } : null;
+}
+
+function intersectObject(origin, direction, object) {
+  if (object instanceof Sphere) {
+    return intersectSphere(origin, direction, object);
+  } else if (object instanceof Plane) {
+    return intersectPlane(origin, direction, object);
+  } else {
+    return null;
+  }
+}
+
+function intersectPlane(origin, direction, plane) {
+  const denominator = dot(direction, plane.normal);
+  if (Math.abs(denominator) > EPSILON) {
+    const t = dot(plane.point.subtract(origin), plane.normal) / denominator;
+    if (t >= 0) {
+      return origin.add(direction.multiply(t));
+    }
+  }
+  return null;
+}
+
+function conjugateGradient(A, b, x0, tol, maxIter) {
+  let x = x0;
+  let r = sub(b, dot(A, x));
+  let p = r;
+  let rsold = dot(r, r);
+
+  for (let i = 0; i < maxIter; i++) {
+    let Ap = dot(A, p);
+    let alpha = rsold / dot(p, Ap);
+    x = add(x, p.multiply(alpha));
+    r = sub(r, Ap.multiply(alpha));
+    let rsnew = dot(r, r);
+    if (Math.sqrt(rsnew) < tol) break;
+    p = add(r, p.multiply(rsnew / rsold));
+    rsold = rsnew;
+  }
+
+  return x;
+}
+
+function computeChristoffelSymbols(metric, inverseMetric) {
+  const dimensions = metric.length;
+  const christoffelSymbols = [];
+  
+  for (let i = 0; i < dimensions; i++) {
+    christoffelSymbols.push([]);
+    for (let j = 0; j < dimensions; j++) {
+      christoffelSymbols[i].push([]);
+      for (let k = 0; k < dimensions; k++) {
+        let sum = 0;
+        for (let l = 0; l < dimensions; l++) {
+          sum += 0.5 * (partialMetric(metric, i, l, k) +
+                        partialMetric(metric, j, l, k) -
+                        partialMetric(metric, k, i, j)) *
+                        inverseMetric[l][j];
+        }
+        christoffelSymbols[i][j].push(sum);
+      }
+    }
+  }
+  
+  return christoffelSymbols;
+}
+
+function partialMetric(metric, i, j, k) {
+  const term1 = partialDerivative(metric[i][j], k);
+  const term2 = 0;
+  for (let l = 0; l < metric.length; l++) {
+    term2 += gamma(l, i, k) * metric[l][j] + gamma(l, j, k) * metric[i][l];
+  }
+  return term1 + term2;
+}
+
+function gamma(i, j, k) {
+  const term1 = partialDerivative(metric[j][k], i);
+  const term2 = partialDerivative(metric[i][k], j);
+  const term3 = -partialDerivative(metric[i][j], k);
+  return 0.5 * (term1 + term2 + term3);
+}
+
+function partialDerivative(func, varIndex) {
+  const dx = 1e-6;
+  const args = Array.from(func.args);
+  const x = args[varIndex];
+  args[varIndex] = x + dx;
+  const f1 = func.apply(null, args);
+  args[varIndex] = x - dx;
+  const f2 = func.apply(null, args);
+  return (f1 - f2) / (2 * dx);
+}
+
+function computeRiemannTensor(metric, inverseMetric, dimensions) {
+  const gamma = computeChristoffelSymbols(metric, inverseMetric, dimensions);
+  const riemann = Array(dimensions).fill().map(() => Array(dimensions).fill().map(() => Array(dimensions).fill().map(() => Array(dimensions).fill(0))));
+  
+  for (let a = 0; a < dimensions; a++) {
+    for (let b = a+1; b < dimensions; b++) {
+      for (let c = 0; c < dimensions; c++) {
+        for (let d = 0; d < dimensions; d++) {
+          const term1 = partialDerivative(gamma[c][b][d], a, metric);
+          const term2 = partialDerivative(gamma[d][b][c], a, metric);
+          const term3 = gamma[c][a][e] * gamma[e][b][d];
+          const term4 = gamma[d][a][e] * gamma[e][b][c];
+          riemann[a][b][c][d] = term1 - term2 + term3 - term4;
+          riemann[b][a][c][d] = -riemann[a][b][c][d];
+          riemann[a][b][d][c] = -riemann[a][b][c][d];
+          riemann[b][a][d][c] = riemann[a][b][c][d];
+        }
+      }
+    }
+  }
+  
+  return riemann;
+}
+
+function connectToServer(serverAddress, onMessageReceived) {
+  const socket = new WebSocket(serverAddress);
+
+  socket.addEventListener('open', (event) => {
+    console.log('Connected to server!');
+  });
+
+  socket.addEventListener('message', (event) => {
+    const data = JSON.parse(event.data);
+    onMessageReceived(data);
+  });
+
+  socket.addEventListener('close', (event) => {
+    console.log('Connection closed:', event.code, event.reason);
+  });
+
+  socket.addEventListener('error', (event) => {
+    console.error('Connection error:', event);
+  });
+
+  function send(data) {
+    const jsonData = JSON.stringify(data);
+    socket.send(jsonData);
+  }
+
+  return { send };
+}
+
+function listenForDataFromGameSession(sessionId) {
+  const socket = new WebSocket('ws://localhost:3000');
+  socket.onopen = () => {
+    socket.send(JSON.stringify({ type: 'join', sessionId: sessionId }));
+  };
+  socket.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    switch (data.type) {
+      case 'start':
+        break;
+      case 'update':
+        break;
+      case 'end':
+        break;
+      default:
+        console.error(`Unknown message type: ${data.type}`);
+        break;
+    }
+  };
+  socket.onerror = (error) => {
+    console.error(`WebSocket error: ${error}`);
+  };
+  socket.onclose = () => {
+    console.log('WebSocket connection closed');
+  };
+}
+
+function joinGameSession(sessionId, playerName, onDataReceived, onJoinSuccess, onJoinError) {
+  const socket = io();
+  
+  socket.emit('join', {sessionId, playerName});
+  
+  socket.on('joinResponse', ({success, message}) => {
+    if (success) {
+      onJoinSuccess();
+      socket.on('gameData', onDataReceived);
+      
+    } else {
+      onJoinError(message);
+    }
+  });
+}
