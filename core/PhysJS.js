@@ -1630,7 +1630,6 @@ function animate(updateFn, fps) {
 
   requestAnimationFrame(loop);
 }
-
 function rotatePoint(point, origin, angle) {
   const s = Math.sin(angle);
   const c = Math.cos(angle);
@@ -1646,21 +1645,18 @@ function rotatePoint(point, origin, angle) {
     y: rotatedY + origin.y,
   };
 }
-
 function lerpVec2(start, end, time) {
   const x = lerp(start.x, end.x, time);
   const y = lerp(start.y, end.y, time);
 
   return { x, y };
 }
-
 function easeVec2(start, end, time, easingFn = (t) => t) {
   const x = ease(start.x, end.x, time, easingFn);
   const y = ease(start.y, end.y, time, easingFn);
 
   return { x, y };
 }
-
 function rotateVec2(vec, origin, angle) {
   const { x, y } = vec;
   const s = Math.sin(angle);
@@ -1677,30 +1673,24 @@ function rotateVec2(vec, origin, angle) {
     y: rotatedY + origin.y,
   };
 }
-
 function lerpColor(start, end, time) {
   const r = lerp(start.r, end.r, time);
   const g = lerp(start.g, end.g, time);
   const b = lerp(start.b, end.b, time);
-
   return { r, g, b };
 }
-
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
-
 function distanceVec2(a, b) {
   const dx = b.x - a.x;
   const dy = b.y - a.y;
 
   return Math.sqrt(dx * dx + dy * dy);
 }
-
 function dotVec2(a, b) {
   return a.x * b.x + a.y * b.y;
 }
-
 function normalizeVec2(vec) {
   const length = Math.sqrt(vec.x * vec.x + vec.y * vec.y);
 
@@ -1710,7 +1700,6 @@ function normalizeVec2(vec) {
 
   return { x: vec.x / length, y: vec.y / length };
 }
-
 function lerpAngle(start, end, time) {
   let difference = end - start;
 
@@ -1722,37 +1711,30 @@ function lerpAngle(start, end, time) {
 
   return start + difference * time;
 }
-
 function deepCopy(obj) {
   return JSON.parse(JSON.stringify(obj));
 }
-
 function isObjectEmpty(obj) {
   return Object.keys(obj).length === 0;
 }
-
 function generateUUID() {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
     const r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
     return v.toString(16);
   });
 }
-
 function isNumberInRange(num, min, max) {
   return num >= min && num <= max;
 }
-
 function getRandomElement(array) {
   return array[Math.floor(Math.random() * array.length)];
 }
-
 function shuffleArray(array) {
   for (let i = array.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [array[i], array[j]] = [array[j], array[i]];
   }
 }
-
 function easeInOutQuad(t, b, c, d) {
   t /= d / 2;
   if (t < 1) {
@@ -1761,7 +1743,6 @@ function easeInOutQuad(t, b, c, d) {
   t--;
   return -c / 2 * (t * (t - 2) - 1) + b;
 }
-
 function sortObjectsByKey(objects, key) {
   objects.sort(function(a, b) {
     const valueA = a[key];
@@ -1775,26 +1756,21 @@ function sortObjectsByKey(objects, key) {
     return 0;
   });
 }
-
 function isPowerOfTwo(num) {
   return (num & (num - 1)) === 0;
 }
-
 function roundToNearest(num, nearest) {
   return Math.round(num / nearest) * nearest;
 }
-
 function capitalizeFirstLetter(string) {
   return string.charAt(0).toUpperCase() + string.slice(1);
 }
-
 function setCookie(name, value, days) {
   const date = new Date();
   date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
   const expires = "expires=" + date.toUTCString();
   document.cookie = name + "=" + value + ";" + expires + ";path=/";
 }
-
 function getCookie(name) {
   const cookieName = name + "=";
   const cookies = document.cookie.split(";");
@@ -1809,41 +1785,32 @@ function getCookie(name) {
   }
   return "";
 }
-
 function setLocalStorageItem(key, value) {
   localStorage.setItem(key, JSON.stringify(value));
 }
-
 function getLocalStorageItem(key) {
   const value = localStorage.getItem(key);
   return value ? JSON.parse(value) : null;
 }
-
 function setSessionStorageItem(key, value) {
   sessionStorage.setItem(key, JSON.stringify(value));
 }
-
 function getSessionStorageItem(key) {
   const value = sessionStorage.getItem(key);
   return value ? JSON.parse(value) : null;
 }
-
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
-
 function isMobile() {
   return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 }
-
 function getScreenWidth() {
   return window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
 }
-
 function getScreenHeight() {
   return window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
 }
-
 function simulateFlashbang(position, intensity, duration, objects) {
   const circle = new Circle(position, intensity);  
   for (let i = 0; i < objects.length; i++) {
@@ -1854,7 +1821,6 @@ function simulateFlashbang(position, intensity, duration, objects) {
     }
   }
 }
-
 function simulateExplosion(position, radius, objects) {
   for (let i = 0; i < objects.length; i++) {
     const object = objects[i];
@@ -1867,7 +1833,6 @@ function simulateExplosion(position, radius, objects) {
     }
   }
 }
-
 class Weapon {
   constructor(name, ammoType, magazineSize, maxAmmo) {
     this.name = name;
@@ -1953,7 +1918,6 @@ class Weapon {
     }
   }
 }
-
 function createTracer(startPos, endPos, color, width) {
   let vertices = [
     startPos.x, startPos.y, startPos.z,
@@ -1973,7 +1937,6 @@ function createTracer(startPos, endPos, color, width) {
   gl.enableVertexAttribArray(shaderProgram.aVertexPosition);
   gl.drawArrays(gl.LINES, 0, vertices.length / 3);
 }
-
 function reconstructPath(endNode) {
   let path = [endNode];
   let currentNode = endNode;
@@ -1983,17 +1946,14 @@ function reconstructPath(endNode) {
   }
   return path.reverse();
 }
-
 function distance(node1, node2) {
   let dx = node1.x - node2.x;
   let dy = node1.y - node2.y;
   return Math.sqrt(dx * dx + dy * dy);
 }
-
 function heuristic(node1, node2) {
   return Math.abs(node1.x - node2.x) + Math.abs(node1.y - node2.y);
 }
-
 function findPath(startNode, endNode, graph) {
   let openList = [startNode];
   let closedList = [];
@@ -2023,7 +1983,6 @@ function findPath(startNode, endNode, graph) {
   }  
   return null;
 }
-
 function attachAttachment2D(attachment, weapon) {
   weapon.attachments.push(attachment);
   if (attachment.type === "scope") {
@@ -2036,11 +1995,9 @@ function attachAttachment2D(attachment, weapon) {
   }
   weapon.sprite.src = "weapon_with_" + attachment.type + ".png";
 }
-
 function mapRange(value, inMin, inMax, outMin, outMax) {
   return (value - inMin) * (outMax - outMin) / (inMax - inMin) + outMin;
 }
-
 class PhysicsBody {
   constructor(type, x, y, width, height, density, friction, restitution) {
     this.type = type;
@@ -2082,7 +2039,6 @@ class PhysicsBody {
     Matter.World.remove(world, this.body);
   }
 }
-
 class PhysicsJoint {
   constructor(bodyA, bodyB, type, options) {
     switch (type) {
@@ -2119,34 +2075,26 @@ class PhysicsJoint {
     Matter.World.remove(world, this.joint);
   }
 }
-
-
 function createBody(type, x, y, width, height, density, friction, restitution) {
   const body = new PhysicsBody(type, x, y, width, height, density, friction, restitution);
   return body;
 }
-
 function createJoint(bodyA, bodyB, type, options) {
   const joint = new PhysicsJoint(bodyA, bodyB, type, options);
   return joint;
 }
-
 function applyAngularImpulse(body, angularImpulse) {
   body.applyAngularImpulse(angularImpulse);
 }
-
 function applyTorque(body, torque) {
   body.applyTorque(torque);
 }
-
 function applyImpulse(body, impulse) {
   body.applyImpulse(impulse);
 }
-
 function applyForce(body, force) {
   body.applyForce(force);
 }
-
 function ragdoll(body, force) {
   const vertices = body.vertices;  
   const joints = [];
@@ -2171,7 +2119,6 @@ function ragdoll(body, force) {
   Matter.World.add(world, joints);
   Matter.World.add(world, constraints);
 }
-
 function createRopeJoint(bodyA, bodyB, maxLength, options = {}) {
   const defaultOptions = {
     stiffness: 1,
@@ -2190,7 +2137,6 @@ function createRopeJoint(bodyA, bodyB, maxLength, options = {}) {
   Matter.World.add(world, ropeJoint);
   return ropeJoint;
 }
-
 function createSliderJoint(bodyA, bodyB, axis, options = {}) {
   const defaultOptions = {
     stiffness: 1,
@@ -2210,7 +2156,6 @@ function createSliderJoint(bodyA, bodyB, axis, options = {}) {
   sliderJoint.axis = axis;
   return sliderJoint;
 }
-
 function createPinJoint(bodyA, bodyB, pin, options = {}) {
   const defaultOptions = {
     stiffness: 1,
@@ -2232,7 +2177,6 @@ function createPinJoint(bodyA, bodyB, pin, options = {}) {
 
   return pinJoint;
 }
-
 function createGearJoint(bodyA, bodyB, jointA, jointB, ratio) {
   const gearJoint = Matter.Constraint.create({
     bodyA,
@@ -2258,7 +2202,6 @@ function createGearJoint(bodyA, bodyB, jointA, jointB, ratio) {
 
   return gearJoint;
 }
-
 function createSpringJoint(bodyA, bodyB, pointA, pointB, stiffness, damping) {
   const springJoint = Matter.Constraint.create({
     bodyA,
@@ -2283,23 +2226,18 @@ function rotateBody(body, angle) {
 function setInertia(body, inertia) {
   Matter.Body.setInertia(body, inertia);
 }
-
 function setMass(body, mass) {
   Matter.Body.setMass(body, mass);
 }
-
 function setVertices(body, vertices) {
   Matter.Body.setVertices(body, vertices);
 }
-
 function setAngle(body, angle) {
   Matter.Body.setAngle(body, angle);
 }
-
 function setRenderProperties(body, options) {
   Matter.Body.set(body, 'render', options);
 }
-
 function createDebris(gl, position, velocity, scale) {
   var buffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
@@ -2327,7 +2265,6 @@ function createDebris(gl, position, velocity, scale) {
   };
   debrisList.push(debris);
 }
-
 function updateDebris(gl, deltaTime) {
   for (var i = 0; i < debrisList.length; i++) {
     var debris = debrisList[i];
@@ -2343,17 +2280,14 @@ function updateDebris(gl, deltaTime) {
     gl.drawArrays(gl.TRIANGLE_FAN, 4, 4);
   }
 }
-
 function setBodyPosition(body, position) {
   body.position = position.clone();
   body.previousPosition = position.clone();
 }
-
 function setBodyInertiaTensor(body, inertiaTensor) {
   body.inertiaTensor = inertiaTensor.clone();
   body.inverseInertiaTensor = inertiaTensor.clone().inverse();
 }
-
 function createCompositeBody(bodies) {
   var compositeBody = {
     bodies: bodies,
@@ -2371,7 +2305,6 @@ function createCompositeBody(bodies) {
     previousAngle: 0,
     isComposite: true
   };
-
   for (var i = 0; i < bodies.length; i++) {
     var body = bodies[i];
 
@@ -2384,7 +2317,6 @@ function createCompositeBody(bodies) {
 
   return compositeBody;
 }
-
 function createWire(startPoint, endPoint, thickness, stiffness) {
   var wire = {
     startPoint: startPoint,
@@ -2411,7 +2343,6 @@ function createWire(startPoint, endPoint, thickness, stiffness) {
   
   return wire;
 }
-
 function setCollisionCategory(object, category) {
   object.collisionCategory = category;
   object.collisionMask = 0;
@@ -2422,7 +2353,6 @@ function setCollisionCategory(object, category) {
     }
   }
 }
-
 function setCollisionMask(object, mask) {
   object.collisionMask = mask;
   for (let i = 0; i < gameObjects.length; i++) {
@@ -2440,9 +2370,7 @@ function setCollisionMask(object, mask) {
     }
   }
 }
-
-function create
-(radius, segments) {
+function create(radius, segments) {
   const vertexData = [];
   const indexData = [];
   
@@ -2497,7 +2425,6 @@ function createGlobe(radius, segments, textureSrc) {
     texture
   };
 }
-
 const program = {
   attributes: {
     position: gl.getAttribLocation(shaderProgram, 'aPosition'),
@@ -2509,7 +2436,6 @@ const program = {
     texture: gl.getUniformLocation(shaderProgram, 'uTexture'),
   },
 };
-
 function drawGlobe(globe, viewMatrix, projectionMatrix) {
   gl.bindBuffer(gl.ARRAY_BUFFER, globe.vertexBuffer);
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, globe.indexBuffer);
@@ -2526,18 +2452,15 @@ function drawGlobe(globe, viewMatrix, projectionMatrix) {
   gl.disableVertexAttribArray(program.attributes.position);
   gl.disableVertexAttribArray(program.attributes.texCoord);
 }
-
 function pointToLatLong(point) {
   const r = Math.sqrt(point[0] ** 2 + point[1] ** 2 + point[2] ** 2);
   const lat = Math.asin(point[2] / r) * 180 / Math.PI;
   const long = Math.atan2(point[1], point[0]) * 180 / Math.PI;
   return { lat, long };
 }
-
 function pointsToLatLong(points) {
   return points.map(pointToLatLong);
 }
-
 function latLongToPoint(lat, long) {
   const phi = lat * Math.PI / 180;
   const theta = long * Math.PI / 180;
@@ -2546,15 +2469,12 @@ function latLongToPoint(lat, long) {
   const z = Math.sin(phi);
   return [x, y, z];
 }
-
 function latLongsToPoints(latLongs) {
   return latLongs.map(({ lat, long }) => latLongToPoint(lat, long));
 }
-
 function magnitude(vector) {
   return Math.sqrt(vector[0] ** 2 + vector[1] ** 2 + vector[2] ** 2);
 }
-
 function createContrailParticles(numParticles, particleSize, particleColor) {
   const particles = [];
   const particleGeometry = new THREE.Geometry();
@@ -2592,14 +2512,12 @@ function createContrailParticles(numParticles, particleSize, particleColor) {
 
   return { particleSystem, updateContrailParticles };
 }
-
 function computeBuoyantForce(object, waterLevel, waterDensity, gravity) {
   const volume = object.geometry.computeVolume();
   const submergedVolume = computeSubmergedVolume(object, waterLevel);
   const buoyancyForce = submergedVolume * waterDensity * gravity;
   return buoyancyForce;
 }
-
 function computeSubmergedVolume(object, waterLevel) {
   const vertices = object.geometry.vertices;
   let submergedVolume = 0;
@@ -2629,7 +2547,6 @@ function computeSubmergedVolume(object, waterLevel) {
 
   return submergedVolume;
 }
-
 function computeTriangleVolume(v1, v2, v3, waterLevel) {
   const p1 = computeIntersectionPoint(v1, v2, waterLevel);
   const p2 = computeIntersectionPoint(v1, v3, waterLevel);
@@ -2637,14 +2554,12 @@ function computeTriangleVolume(v1, v2, v3, waterLevel) {
   const volume = Math.abs(p1.clone().sub(p2).cross(p1.clone().sub(p3)).dot(v1.clone().sub(p1))) / 6;
   return volume;
 }
-
 function computeIntersectionPoint(p1, p2, waterLevel) {
   const t = (waterLevel - p1.y) / (p2.y - p1.y);
   const x = p1.x + t * (p2.x - p1.x);
   const z = p1.z + t * (p2.z - p1.z);
   return new THREE.Vector3(x, waterLevel, z);
 }
-
 function fourierTransform(signal) {
   const n = signal.length;
   const spectrum = new Array(n);
@@ -2659,7 +2574,6 @@ function fourierTransform(signal) {
   }
   return spectrum;
 }
-
 function bezierCurve(t, points) {
   const n = points.length - 1;
   let x = 0, y = 0;
@@ -2671,7 +2585,6 @@ function bezierCurve(t, points) {
   }
   return new THREE.Vector2(x, y);
 }
-
 function binomialCoefficient(n, k) {
   let coeff = 1;
   for (let i = n - k + 1; i <= n; i++) {
@@ -2682,7 +2595,6 @@ function binomialCoefficient(n, k) {
   }
   return coeff;
 }
-
 function svd(m) {
     let u = [],
         v = [],
@@ -2743,7 +2655,6 @@ function svd(m) {
 }
 return [u, s, vt]
 }
-
 function slerp(q1, q2, t) {
   let cosTheta = q1.dot(q2);
   if (cosTheta < 0) {
@@ -2763,16 +2674,13 @@ function slerp(q1, q2, t) {
   const result = q1.multiply(k0).add(q2.multiply(k1));
   return result.normalize();
 }
-
 function relu(x) {
   return Math.max(0, x);
 }
-
 function meanSquaredError(yTrue, yPred) {
   const sumOfSquares = yTrue.reduce((acc, val, i) => acc + Math.pow(val - yPred[i], 2), 0);
   return sumOfSquares / yTrue.length;
 }
-
 function backpropagation(inputs, targets, weights, biases) {
   const z1 = dot(inputs, weights[0]).add(biases[0]);
   const a1 = z1.map(relu);
@@ -2791,7 +2699,6 @@ function backpropagation(inputs, targets, weights, biases) {
   
   return {dWeights1, dBiases1, dWeights2, dBiases2};
 }
-
 function dot(a, b) {
   const m = a.shape[0];
   const n = b.shape[1];
@@ -2808,17 +2715,14 @@ function dot(a, b) {
   }
   return c;
 }
-
 function relu(x) {
   return Math.max(0, x);
 }
-
 function softmax(x) {
   const exps = x.map(Math.exp);
   const sum = exps.reduce((acc, cur) => acc + cur, 0);
   return exps.map((e) => e / sum);
 }
-
 function sub(a, b) {
   const c = new Matrix(a.shape[0], a.shape[1]);
   for (let i = 0; i < a.shape[0]; i++) {
@@ -2828,7 +2732,6 @@ function sub(a, b) {
   }
   return c;
 }
-
 function transpose(a) {
   const b = new Matrix(a.shape[1], a.shape[0]);
   for (let i = 0; i < a.shape[0]; i++) {
@@ -2838,7 +2741,6 @@ function transpose(a) {
   }
   return b;
 }
-
 function sumRows(a) {
   const b = new Matrix(1, a.shape[1]);
   for (let i = 0; i < a.shape[1]; i++) {
@@ -2850,7 +2752,6 @@ function sumRows(a) {
   }
   return b;
 }
-
 function multiply1(a, b) {
   const c = new Matrix(a.shape[0], a.shape[1]);
   for (let i = 0; i < a.shape[0]; i++) {
@@ -2860,11 +2761,9 @@ function multiply1(a, b) {
   }
   return c;
 }
-
 function drelu(x) {
   return x > 0 ? 1 : 0;
 }
-
 function rayCast(origin, direction, objects) {
   let closestObject = null;
   let closestDistance = Infinity;
@@ -2885,7 +2784,6 @@ function rayCast(origin, direction, objects) {
     point: origin.add(direction.multiply(closestDistance))
   } : null;
 }
-
 function intersectObject(origin, direction, object) {
   if (object instanceof Sphere) {
     return intersectSphere(origin, direction, object);
@@ -2895,7 +2793,6 @@ function intersectObject(origin, direction, object) {
     return null;
   }
 }
-
 function intersectPlane(origin, direction, plane) {
   const denominator = dot(direction, plane.normal);
   if (Math.abs(denominator) > EPSILON) {
@@ -2906,7 +2803,6 @@ function intersectPlane(origin, direction, plane) {
   }
   return null;
 }
-
 function conjugateGradient(A, b, x0, tol, maxIter) {
   let x = x0;
   let r = sub(b, dot(A, x));
@@ -2926,7 +2822,6 @@ function conjugateGradient(A, b, x0, tol, maxIter) {
 
   return x;
 }
-
 function computeChristoffelSymbols(metric, inverseMetric) {
   const dimensions = metric.length;
   const christoffelSymbols = [];
@@ -2950,7 +2845,6 @@ function computeChristoffelSymbols(metric, inverseMetric) {
   
   return christoffelSymbols;
 }
-
 function partialMetric(metric, i, j, k) {
   const term1 = partialDerivative(metric[i][j], k);
   const term2 = 0;
@@ -2966,7 +2860,6 @@ function gamma(i, j, k) {
   const term3 = -partialDerivative(metric[i][j], k);
   return 0.5 * (term1 + term2 + term3);
 }
-
 function partialDerivative(func, varIndex) {
   const dx = 1e-6;
   const args = Array.from(func.args);
@@ -2977,7 +2870,6 @@ function partialDerivative(func, varIndex) {
   const f2 = func.apply(null, args);
   return (f1 - f2) / (2 * dx);
 }
-
 function computeRiemannTensor(metric, inverseMetric, dimensions) {
   const gamma = computeChristoffelSymbols(metric, inverseMetric, dimensions);
   const riemann = Array(dimensions).fill().map(() => Array(dimensions).fill().map(() => Array(dimensions).fill().map(() => Array(dimensions).fill(0))));
@@ -3001,7 +2893,6 @@ function computeRiemannTensor(metric, inverseMetric, dimensions) {
   
   return riemann;
 }
-
 function connectToServer(serverAddress, onMessageReceived) {
   const socket = new WebSocket(serverAddress);
 
@@ -3029,7 +2920,6 @@ function connectToServer(serverAddress, onMessageReceived) {
 
   return { send };
 }
-
 function listenForDataFromGameSession(sessionId) {
   const socket = new WebSocket('ws://localhost:3000');
   socket.onopen = () => {
@@ -3056,7 +2946,6 @@ function listenForDataFromGameSession(sessionId) {
     console.log('WebSocket connection closed');
   };
 }
-
 function joinGameSession(sessionId, playerName, onDataReceived, onJoinSuccess, onJoinError) {
   const socket = io();
   
@@ -3072,7 +2961,6 @@ function joinGameSession(sessionId, playerName, onDataReceived, onJoinSuccess, o
     }
   });
 }
-
 function computeWaves(velocity, gridSize, time) {
   const waves = new Float32Array(gridSize * gridSize);
   for (let i = 0; i < gridSize; i++) {
@@ -3086,7 +2974,6 @@ function computeWaves(velocity, gridSize, time) {
   }
   return waves;
 }
-
 function generateWake(velocity, gridSize, time) {
   const waves = computeWaves(velocity, gridSize, time);
   const wake = new Float32Array(gridSize * gridSize);
@@ -3098,7 +2985,6 @@ function generateWake(velocity, gridSize, time) {
   }
   return wake;
 }
-
 function applyWakeToWater(waterHeightmap, wake, x, z, wakeStrength) {
   const gridSize = Math.sqrt(waterHeightmap.length);
   const wakeSize = Math.sqrt(wake.length);
@@ -3112,7 +2998,6 @@ function applyWakeToWater(waterHeightmap, wake, x, z, wakeStrength) {
     }
   }
 }
-
 function computeAerodynamicForces(velocity, angularVelocity, density, shape, liftCoefficient, dragCoefficient, momentCoefficient) {
   const airVelocity = airDensity * velocity.norm();
   const relativeVelocity = velocity.subtract(shape.orientation.inverse().multiply(angularVelocity).cross(shape.centerOfMass.subtract(shape.position)));
@@ -3127,7 +3012,6 @@ function computeAerodynamicForces(velocity, angularVelocity, density, shape, lif
   
   return {liftForce, dragForce, moment};
 }
-
 function createWireframe(model) {
   const wireframe = [];
   for (let i = 0; i < model.faces.length; i++) {
@@ -3140,7 +3024,6 @@ function createWireframe(model) {
   }
   return wireframe;
 }
-
 function syncDatabases(databases) {
   const latestData = [];
   for (let i = 0; i < databases.length; i++) {
@@ -3153,7 +3036,6 @@ function syncDatabases(databases) {
     db.updateData(mergedData);
   }
 }
-
 function connectToDatabase(databaseURL, databaseCredentials) {
   return new Promise((resolve, reject) => {
     const database = new DistributedDatabase(databaseURL, databaseCredentials);
@@ -3164,7 +3046,6 @@ function connectToDatabase(databaseURL, databaseCredentials) {
     }
   });
 }
-
 function mergeData(object1, object2) {
   if (!object1 && !object2) {
     return {};
@@ -3193,4 +3074,22 @@ function mergeData(object1, object2) {
     object2.version++;
     return object2;
   }
+}
+function computeDeformation(stressTensor, elasticModulusTensor) {
+  const strainTensor = dot(multiply(2, elasticModulusTensor), stressTensor);
+  const deformationTensor = add(strainTensor, identity(3));
+  return deformationTensor;
+}
+function deformGeometry(mesh, deformation) {
+  for (let i = 0; i < mesh.vertices.length; i++) {
+    const vertex = mesh.vertices[i];
+    const deformedVertex = [0, 0, 0];
+    for (let j = 0; j < 3; j++) {
+      for (let k = 0; k < 3; k++) {
+        deformedVertex[j] += deformation[j][k] * vertex[k];
+      }
+    }
+    mesh.vertices[i] = deformedVertex;
+  }
+  return mesh;
 }
