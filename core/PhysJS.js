@@ -1121,11 +1121,9 @@ function createParticles(gl, maxParticles) {
 
       gl.bindBuffer(gl.ARRAY_BUFFER, velocityBuffer);
       gl.bufferData(gl.ARRAY_BUFFER, velocities, gl.DYNAMIC_DRAW);
-        // Update life time buffer data
       gl.bindBuffer(gl.ARRAY_BUFFER, lifeTimeBuffer);
       gl.bufferData(gl.ARRAY_BUFFER, lifeTimes, gl.DYNAMIC_DRAW);
 
-  // Update start time buffer data
       gl.bindBuffer(gl.ARRAY_BUFFER, startTimeBuffer);
       gl.bufferData(gl.ARRAY_BUFFER, startTimes, gl.DYNAMIC_DRAW);
     },
@@ -1471,8 +1469,6 @@ function calculateWaveFunction(x, t, V, m, hbar) {
   
   for (let n = 1; n <= t/dt; n++) {
     const psi_n = psi[n-1];
-    
-    // Iterate over positions
     for (let i = 1; i < x.length-1; i++) {
       const x_i = x[i];
       const V_i = V(x_i);
@@ -1602,7 +1598,6 @@ function calculateSnellReflection(direction, normal, refractionIndex1, refractio
   const sinTheta1 = Math.sqrt(Math.max(0, 1 - cosTheta1 * cosTheta1));
   const sinTheta2 = refractionIndex1 / refractionIndex2 * sinTheta1;
   if (sinTheta2 >= 1) {
-    // Total internal reflection
     return direction.clone().reflect(normal);
   } else {
     const cosTheta2 = Math.sqrt(Math.max(0, 1 - sinTheta2 * sinTheta2));
@@ -1619,7 +1614,7 @@ function ease(start, end, time, easingFn = (t) => t) {
 }
 
 function animate(updateFn, fps) {
-  const frameInterval = 1000 / fps; // Calculate time between each frame
+  const frameInterval = 1000 / fps;
   let lastFrameTime = 0;
 
   function loop(currentTime) {
@@ -1923,15 +1918,15 @@ class Weapon {
   }
   
   fireSingle() {
-    // Perform the firing action for a single shot here...
+    console.log("Fired single!");
   }
   
   fireBurst() {
-    // Perform the firing action for a burst of shots here...
+    console.log("Fired burst!");
   }
   
   fireAuto() {
-    // Perform the firing action for full-auto fire here...
+    console.log("Fired auto!");
   }
   
   switchFireMode() {
@@ -2282,11 +2277,9 @@ function createSpringJoint(bodyA, bodyB, pointA, pointB, stiffness, damping) {
 
   return springJoint;
 }
-
 function rotateBody(body, angle) {
   Matter.Body.rotate(body, angle);
 }
-
 function setInertia(body, inertia) {
   Matter.Body.setInertia(body, inertia);
 }
@@ -2401,7 +2394,6 @@ function createWire(startPoint, endPoint, thickness, stiffness) {
     length: distance(startPoint, endPoint),
     segments: [],
     update: function() {
-      // update wire segments based on physics simulation
     }
   };  
   var numSegments = Math.ceil(wire.length / (thickness * 2));
@@ -2519,33 +2511,18 @@ const program = {
 };
 
 function drawGlobe(globe, viewMatrix, projectionMatrix) {
-  // Bind the vertex buffer
   gl.bindBuffer(gl.ARRAY_BUFFER, globe.vertexBuffer);
-  
-  // Bind the index buffer
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, globe.indexBuffer);
-  
-  // Set the shader program uniforms
   gl.uniformMatrix4fv(program.uniforms.viewMatrix, false, viewMatrix);
   gl.uniformMatrix4fv(program.uniforms.projectionMatrix, false, projectionMatrix);
-  
-  // Bind the texture
   gl.activeTexture(gl.TEXTURE0);
   gl.bindTexture(gl.TEXTURE_2D, globe.texture);
   gl.uniform1i(program.uniforms.texture, 0);
-  
-  // Enable the vertex attribute arrays
   gl.enableVertexAttribArray(program.attributes.position);
   gl.enableVertexAttribArray(program.attributes.texCoord);
-  
-  // Set the vertex attribute pointers
   gl.vertexAttribPointer(program.attributes.position, 3, gl.FLOAT, false, 20, 0);
   gl.vertexAttribPointer(program.attributes.texCoord, 2, gl.FLOAT, false, 20, 12);
-  
-  // Draw the sphere
   gl.drawElements(gl.TRIANGLES, globe.numIndices, gl.UNSIGNED_SHORT, 0);
-  
-  // Disable the vertex attribute arrays
   gl.disableVertexAttribArray(program.attributes.position);
   gl.disableVertexAttribArray(program.attributes.texCoord);
 }
@@ -3094,4 +3071,126 @@ function joinGameSession(sessionId, playerName, onDataReceived, onJoinSuccess, o
       onJoinError(message);
     }
   });
+}
+
+function computeWaves(velocity, gridSize, time) {
+  const waves = new Float32Array(gridSize * gridSize);
+  for (let i = 0; i < gridSize; i++) {
+    for (let j = 0; j < gridSize; j++) {
+      const x = (i / gridSize) - 0.5;
+      const y = (j / gridSize) - 0.5;
+      const d = Math.sqrt(x * x + y * y);
+      const waveHeight = Math.sin(10 * d - velocity * time);
+      waves[i * gridSize + j] = waveHeight;
+    }
+  }
+  return waves;
+}
+
+function generateWake(velocity, gridSize, time) {
+  const waves = computeWaves(velocity, gridSize, time);
+  const wake = new Float32Array(gridSize * gridSize);
+  for (let i = 0; i < gridSize; i++) {
+    for (let j = 0; j < gridSize; j++) {
+      const waveHeight = waves[i * gridSize + j];
+      wake[i * gridSize + j] = Math.max(0, 1 - waveHeight);
+    }
+  }
+  return wake;
+}
+
+function applyWakeToWater(waterHeightmap, wake, x, z, wakeStrength) {
+  const gridSize = Math.sqrt(waterHeightmap.length);
+  const wakeSize = Math.sqrt(wake.length);
+  const wakeStartX = x - Math.floor(wakeSize / 2);
+  const wakeStartZ = z - Math.floor(wakeSize / 2);
+  for (let i = 0; i < wakeSize; i++) {
+    for (let j = 0; j < wakeSize; j++) {
+      const waveHeight = wake[i * wakeSize + j];
+      const waterIndex = ((wakeStartX + i) * gridSize) + (wakeStartZ + j);
+      waterHeightmap[waterIndex] += waveHeight * wakeStrength;
+    }
+  }
+}
+
+function computeAerodynamicForces(velocity, angularVelocity, density, shape, liftCoefficient, dragCoefficient, momentCoefficient) {
+  const airVelocity = airDensity * velocity.norm();
+  const relativeVelocity = velocity.subtract(shape.orientation.inverse().multiply(angularVelocity).cross(shape.centerOfMass.subtract(shape.position)));
+  const angleOfAttack = Math.atan2(relativeVelocity.z, relativeVelocity.x);
+  const lift = 0.5 * airDensity * Math.pow(airVelocity, 2) * liftCoefficient * shape.area * Math.sin(angleOfAttack);
+  const drag = 0.5 * airDensity * Math.pow(airVelocity, 2) * dragCoefficient * shape.area * Math.cos(angleOfAttack);
+  const liftDirection = new Vector3D(Math.sin(angleOfAttack), 0, Math.cos(angleOfAttack));
+  const dragDirection = relativeVelocity.normalize().multiply(-1);
+  const liftForce = liftDirection.multiply(lift);
+  const dragForce = dragDirection.multiply(drag);
+  const moment = shape.orientation.multiply(momentCoefficient.cross(shape.centerOfMass.subtract(shape.position)));
+  
+  return {liftForce, dragForce, moment};
+}
+
+function createWireframe(model) {
+  const wireframe = [];
+  for (let i = 0; i < model.faces.length; i++) {
+    const face = model.faces[i];
+    for (let j = 0; j < face.length; j++) {
+      const v1 = model.vertices[face[j]];
+      const v2 = model.vertices[face[(j + 1) % face.length]];
+      wireframe.push([v1, v2]);
+    }
+  }
+  return wireframe;
+}
+
+function syncDatabases(databases) {
+  const latestData = [];
+  for (let i = 0; i < databases.length; i++) {
+    const db = connectToDatabase(databases[i]);
+    latestData[i] = db.retrieveData();
+  }
+  const mergedData = mergeData(latestData);
+  for (let i = 0; i < databases.length; i++) {
+    const db = connectToDatabase(databases[i]);
+    db.updateData(mergedData);
+  }
+}
+
+function connectToDatabase(databaseURL, databaseCredentials) {
+  return new Promise((resolve, reject) => {
+    const database = new DistributedDatabase(databaseURL, databaseCredentials);
+    if (database.isConnected()) {
+      resolve(database);
+    } else {
+      reject(new Error('Failed to connect to database'));
+    }
+  });
+}
+
+function mergeData(object1, object2) {
+  if (!object1 && !object2) {
+    return {};
+  } else if (!object1) {
+    return object2;
+  } else if (!object2) {
+    return object1;
+  }
+  if (!object1.hasOwnProperty('version') || !object2.hasOwnProperty('version')) {
+    throw new Error('Objects do not have a version property.');
+  }
+  if (object1.version > object2.version) {
+    Object.keys(object2).forEach(key => {
+      if (key !== 'version') {
+        object1[key] = object2[key];
+      }
+    });
+    object1.version++;
+    return object1;
+  } else {
+    Object.keys(object1).forEach(key => {
+      if (key !== 'version') {
+        object2[key] = object1[key];
+      }
+    });
+    object2.version++;
+    return object2;
+  }
 }
